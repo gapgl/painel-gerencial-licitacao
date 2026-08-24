@@ -46,8 +46,11 @@
     <div class="sidebar-group" data-grupo="secao">
       <div class="sidebar-group-title">Acompanhamento da Seção</div>
       <a href="#secao-processos" class="sidebar-link" data-page="secao"><span class="idx">1</span> Acompanhamento de Processos</a>
+      <!-- Temporariamente ocultos a pedido (não apagados — só remova "hidden" das seções e descomente os links abaixo pra reativar) -->
+      <!--
       <a href="#secao-atas" class="sidebar-link" data-page="secao"><span class="idx">2</span> Atas Vigentes</a>
       <a href="#secao-planejamento" class="sidebar-link" data-page="secao"><span class="idx">3</span> Planejamento de Processos</a>
+      -->
     </div>
   </nav>
 
@@ -214,7 +217,9 @@
       </div>
     </section>
 
-    <section id="secao-atas">
+    <section id="secao-atas" class="hidden">
+      <!-- Oculto temporariamente. Para reativar: apague class="hidden" aqui
+           e descomente os links correspondentes no menu lateral (acima). -->
       <div class="section-head">
         <h2>2. Atas de Registro de Preço Vigentes</h2>
         <span id="atasCount"></span>
@@ -234,7 +239,9 @@
       </div>
     </section>
 
-    <section id="secao-planejamento">
+    <section id="secao-planejamento" class="hidden">
+      <!-- Oculto temporariamente. Para reativar: apague class="hidden" aqui
+           e descomente os links correspondentes no menu lateral (acima). -->
       <div class="section-head">
         <h2>3. Planejamento de Processos da Seção</h2>
         <span>Planejamento próprio &middot; ano-base 2026</span>
