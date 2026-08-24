@@ -25,9 +25,9 @@ const SHEET_URLS = {
   // Cap Saulo (pasta de rede), importado SEM alterações para o Google Sheets
   // (mesmas colunas, mesmos nomes). Publique as abas: PROCESSOS, ATAS VIGENTES,
   // 30 (Materiais de Consumo), 39 (Serviços) e 52 (Materiais Permanentes).
-  processos: "",
-  atas: "",
-  pipelineConsumo: "",
-  pipelineServicos: "",
-  pipelinePermanentes: ""
+  processos: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ21GEEIEkCMGcqzO5UXHKmibyCAi058HICUfo71cYgaVNKkYxts8_jUlZ7d9V0tud3_Y8fv-SCSZpQ/pub?gid=1792534194&single=true&output=csv",
+  atas: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ21GEEIEkCMGcqzO5UXHKmibyCAi058HICUfo71cYgaVNKkYxts8_jUlZ7d9V0tud3_Y8fv-SCSZpQ/pub?gid=230824727&single=true&output=csv",
+  pipelineConsumo: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ21GEEIEkCMGcqzO5UXHKmibyCAi058HICUfo71cYgaVNKkYxts8_jUlZ7d9V0tud3_Y8fv-SCSZpQ/pub?gid=1938823239&single=true&output=csv",
+  pipelineServicos: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ21GEEIEkCMGcqzO5UXHKmibyCAi058HICUfo71cYgaVNKkYxts8_jUlZ7d9V0tud3_Y8fv-SCSZpQ/pub?gid=598227188&single=true&output=csv",
+  pipelinePermanentes: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ21GEEIEkCMGcqzO5UXHKmibyCAi058HICUfo71cYgaVNKkYxts8_jUlZ7d9V0tud3_Y8fv-SCSZpQ/pub?gid=1922832749&single=true&output=csv"
 };
