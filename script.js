@@ -154,12 +154,12 @@ function renderIndicadores() {
    ============================================================ */
 
 const STATUS_CANONICO = [
-  { chave: "homologado",   rotulo: "Homologado",          cor: "var(--ok-bar)",     match: s => s.includes("HOMOLOGADO") },
-  { chave: "andamento",    rotulo: "Licitação em Andamento", cor: "#3b82f6",         match: s => s.includes("LICITAÇÃO EM ANDAMENTO") },
-  { chave: "adequacao",    rotulo: "Adequação Pós CJU",    cor: "var(--warn-bar)",   match: s => s.includes("ADEQUAÇÃO") },
-  { chave: "fase_interna", rotulo: "Fase Interna",         cor: "var(--secao-500)", match: s => s.includes("FASE INTERNA") },
-  { chave: "publicado",    rotulo: "Publicado",            cor: "#14b8a6",           match: s => s.includes("PUBLICADO") },
-  { chave: "sem_sucesso",  rotulo: "Sem Sucesso / Suspenso", cor: "var(--crit-bar)", match: () => true } // fallback
+  { chave: "homologado",   rotulo: "Homologado",          cor: "#22c55e", match: s => s.includes("HOMOLOGADO") },
+  { chave: "andamento",    rotulo: "Licitação em Andamento", cor: "#3b82f6",  match: s => s.includes("LICITAÇÃO EM ANDAMENTO") },
+  { chave: "adequacao",    rotulo: "Adequação Pós CJU",    cor: "#f5a623",   match: s => s.includes("ADEQUAÇÃO") },
+  { chave: "fase_interna", rotulo: "Fase Interna",         cor: "#6d28d9",   match: s => s.includes("FASE INTERNA") },
+  { chave: "publicado",    rotulo: "Publicado",            cor: "#14b8a6",   match: s => s.includes("PUBLICADO") },
+  { chave: "sem_sucesso",  rotulo: "Sem Sucesso / Suspenso", cor: "#e34848", match: () => true } // fallback
 ];
 
 function classificarStatus(statusBruto) {
@@ -179,8 +179,8 @@ function contarPor(lista, campo, limite) {
   return limite ? ordenado.slice(0, limite) : ordenado;
 }
 
-function renderSecaoKPIs() {
-  const processos = DASHBOARD_DATA.controleProcessos.processos;
+function renderSecaoKPIs(processosFiltrados) {
+  const processos = processosFiltrados || DASHBOARD_DATA.controleProcessos.processos;
   const atas = DASHBOARD_DATA.controleProcessos.atas;
 
   const total = processos.length;
@@ -217,9 +217,8 @@ function renderSecaoKPIs() {
   `;
 }
 
-function renderPanorama() {
-  const processos = DASHBOARD_DATA.controleProcessos.processos;
-  document.getElementById("panoramaTotal").textContent = `${processos.length} processos mapeados`;
+function renderPanorama(processosFiltrados) {
+  const processos = processosFiltrados || DASHBOARD_DATA.controleProcessos.processos;
 
   const contagem = {};
   processos.forEach(p => {
@@ -257,8 +256,8 @@ function renderRankingLista(elId, lista) {
   `).join("");
 }
 
-function renderRankings() {
-  const processos = DASHBOARD_DATA.controleProcessos.processos;
+function renderRankings(processosFiltrados) {
+  const processos = processosFiltrados || DASHBOARD_DATA.controleProcessos.processos;
   renderRankingLista("rankingResponsavel", contarPor(processos, "responsavel", 8));
   renderRankingLista("rankingOM", contarPor(processos, "om", 8));
 }
@@ -301,27 +300,179 @@ function renderAtas() {
 
 function renderPipeline() {
   const pipeline = DASHBOARD_DATA.controleProcessos.pipeline;
-  const categorias = ["Materiais de Consumo", "Contratação de Serviços", "Materiais Permanentes"];
+  const categoriaAtiva = document.querySelector("#pipelineTabs button.active")?.dataset.cat || "Materiais de Consumo";
+  const itens = pipeline.filter(p => p.categoria === categoriaAtiva);
 
-  document.getElementById("pipelineGrid").innerHTML = categorias.map(cat => {
-    const itens = pipeline.filter(p => p.categoria === cat);
+  document.getElementById("pipelineGrid").innerHTML = itens.map(p => `
+    <div class="pipeline-card">
+      <span class="tag-ata ${p.ataVigente ? "sim" : "nao"}">${p.ataVigente ? "Ata Vigente" : "Sem Ata"}</span>
+      <div class="obj">${p.objeto}</div>
+      ${p.vigencia ? `<div class="meta-row"><span>Vigência</span><span>${p.vigencia}</span></div>` : ""}
+      ${p.licitacao ? `<div class="meta-row"><span>Licitação</span><span>${p.licitacao}</span></div>` : ""}
+      <div class="meta-row"><span>Status</span><span>${p.status}</span></div>
+      ${p.observacao ? `<div class="obs">${p.observacao}</div>` : ""}
+    </div>
+  `).join("");
+}
+
+function setupPipelineTabs() {
+  document.querySelectorAll("#pipelineTabs button").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("#pipelineTabs button").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      renderPipeline();
+    });
+  });
+}
+
+/* ---------- Histórico de Processos (filtros) ---------- */
+
+/** Extrai o ano de um código de licitação, aceitando "9005/2026" ou "9005/26". */
+function extrairAno(licitacao) {
+  const lic = (licitacao || "").trim();
+  if (!lic || lic === "-") return null;
+  const m4 = lic.match(/(20\d{2})/);
+  if (m4) return m4[1];
+  const m2 = lic.match(/\/(\d{2})$/);
+  if (m2) return "20" + m2[1];
+  return null;
+}
+
+let filtroEstado = { ano: "2026", status: "todos", busca: "" };
+
+function popularFiltrosProcessos() {
+  const processos = DASHBOARD_DATA.controleProcessos.processos;
+
+  const anos = new Set();
+  let temSemNumero = false;
+  processos.forEach(p => {
+    const a = extrairAno(p.licitacao);
+    if (a) anos.add(a); else temSemNumero = true;
+  });
+  const anosOrdenados = [...anos].sort((a, b) => b - a);
+
+  const selAno = document.getElementById("filtroAno");
+  selAno.innerHTML =
+    `<option value="todos">Todos os anos</option>` +
+    anosOrdenados.map(a => `<option value="${a}">${a}</option>`).join("") +
+    (temSemNumero ? `<option value="sem_numero">Sem número</option>` : "");
+  selAno.value = anosOrdenados.includes("2026") ? "2026" : "todos";
+  filtroEstado.ano = selAno.value;
+
+  const selStatus = document.getElementById("filtroStatus");
+  selStatus.innerHTML = `<option value="todos">Todos os status</option>` +
+    STATUS_CANONICO.map(c => `<option value="${c.chave}">${c.rotulo}</option>`).join("");
+}
+
+function getProcessosFiltrados() {
+  const processos = DASHBOARD_DATA.controleProcessos.processos;
+  const busca = filtroEstado.busca.trim().toLowerCase();
+
+  return processos.filter(p => {
+    const ano = extrairAno(p.licitacao);
+    const anoOk = filtroEstado.ano === "todos" ? true :
+      filtroEstado.ano === "sem_numero" ? ano === null : ano === filtroEstado.ano;
+
+    const statusOk = filtroEstado.status === "todos" ? true :
+      classificarStatus(p.status).chave === filtroEstado.status;
+
+    const buscaOk = !busca || `${p.objeto} ${p.responsavel} ${p.om}`.toLowerCase().includes(busca);
+
+    return anoOk && statusOk && buscaOk;
+  });
+}
+
+function renderTabelaProcessos(lista) {
+  document.getElementById("processosBody").innerHTML = lista.map(p => {
+    const c = classificarStatus(p.status);
     return `
-      <div class="pipeline-col">
-        <h3>${cat} (${itens.length})</h3>
-        ${itens.map(p => `
-          <div class="pipeline-card">
-            <span class="tag-ata ${p.ataVigente ? "sim" : "nao"}">${p.ataVigente ? "Ata Vigente" : "Sem Ata"}</span>
-            <div class="obj">${p.objeto}</div>
-            ${p.vigencia ? `<div class="meta-row"><span>Vigência</span><span>${p.vigencia}</span></div>` : ""}
-            ${p.licitacao ? `<div class="meta-row"><span>Licitação</span><span>${p.licitacao}</span></div>` : ""}
-            <div class="meta-row"><span>Status</span><span>${p.status}</span></div>
-            ${p.observacao ? `<div class="obs">${p.observacao}</div>` : ""}
-          </div>
-        `).join("")}
-      </div>
+      <tr>
+        <td class="nup">${p.licitacao || "-"}</td>
+        <td>${p.modalidade}</td>
+        <td><span class="pill" style="background:${c.cor}22;color:${c.cor};">${c.rotulo}</span></td>
+        <td>${p.objeto}</td>
+        <td>${p.om}</td>
+        <td>${p.responsavel || "-"}</td>
+      </tr>
     `;
   }).join("");
 }
+
+/** Recalcula tudo que depende do filtro: KPIs, status, rankings e tabela. */
+function atualizarAcompanhamentoProcessos() {
+  const total = DASHBOARD_DATA.controleProcessos.processos.length;
+  const filtrados = getProcessosFiltrados();
+
+  document.getElementById("panoramaTotal").textContent =
+    `${filtrados.length} de ${total} processos`;
+
+  renderSecaoKPIs(filtrados);
+  renderPanorama(filtrados);
+  renderRankings(filtrados);
+  renderTabelaProcessos(filtrados);
+}
+
+function setupFiltrosProcessos() {
+  document.getElementById("filtroAno").addEventListener("change", e => {
+    filtroEstado.ano = e.target.value;
+    atualizarAcompanhamentoProcessos();
+  });
+  document.getElementById("filtroStatus").addEventListener("change", e => {
+    filtroEstado.status = e.target.value;
+    atualizarAcompanhamentoProcessos();
+  });
+  document.getElementById("filtroBusca").addEventListener("input", e => {
+    filtroEstado.busca = e.target.value;
+    atualizarAcompanhamentoProcessos();
+  });
+}
+
+/* ---------- Navegação: hambúrguer + páginas ---------- */
+
+function mostrarPagina(pagina) {
+  document.getElementById("page-rag").classList.toggle("hidden", pagina !== "rag");
+  document.getElementById("page-secao").classList.toggle("hidden", pagina !== "secao");
+  document.querySelectorAll(".sidebar-link").forEach(a => {
+    a.classList.toggle("active", a.getAttribute("href") === location.hash);
+  });
+}
+
+function abrirSidebar() {
+  document.getElementById("sidebarPanel").classList.remove("slide-out");
+  document.getElementById("sidebarBackdrop").classList.remove("hidden");
+}
+function fecharSidebar() {
+  document.getElementById("sidebarPanel").classList.add("slide-out");
+  document.getElementById("sidebarBackdrop").classList.add("hidden");
+}
+
+function irParaHash(hash) {
+  const id = (hash || "").replace("#", "");
+  const link = document.querySelector(`.sidebar-link[href="#${id}"]`);
+  const pagina = link ? link.dataset.page : "rag";
+  mostrarPagina(pagina);
+  if (link) location.hash = hash;
+  fecharSidebar();
+  const el = document.getElementById(id);
+  if (el) setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
+}
+
+function setupNavegacao() {
+  document.getElementById("menuToggle").addEventListener("click", abrirSidebar);
+  document.getElementById("sidebarClose").addEventListener("click", fecharSidebar);
+  document.getElementById("sidebarBackdrop").addEventListener("click", fecharSidebar);
+
+  document.querySelectorAll(".sidebar-link").forEach(a => {
+    a.addEventListener("click", e => {
+      e.preventDefault();
+      irParaHash(a.getAttribute("href"));
+    });
+  });
+
+  const inicial = location.hash && document.querySelector(`.sidebar-link[href="${location.hash}"]`);
+  mostrarPagina(inicial ? inicial.dataset.page : "rag");
+}
+
 let filtroAtivo = "todos";
 
 function renderContratos() {
@@ -363,9 +514,8 @@ function renderAll() {
   renderIndicadores();
   renderContratos();
 
-  renderSecaoKPIs();
-  renderPanorama();
-  renderRankings();
+  popularFiltrosProcessos();
+  atualizarAcompanhamentoProcessos();
   renderAtas();
   renderPipeline();
 }
@@ -374,6 +524,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   // 1) Mostra imediatamente com os dados locais (data.js), para a tela
   //    nunca ficar em branco enquanto busca a planilha.
   setupFilters();
+  setupFiltrosProcessos();
+  setupPipelineTabs();
+  setupNavegacao();
   renderAll();
 
   // 2) Tenta atualizar com os dados do Google Sheets, se configurado.
