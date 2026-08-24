@@ -36,7 +36,7 @@ function renderKPIs() {
       <div class="sub">${concluidasPct}% do planejado no PCA</div>
     </div>
     <div class="kpi status-critico">
-      <div class="label">Contratos em Risco</div>
+      <div class="label">Contratos a Vencer</div>
       <div class="value">${r.contratosVigenciaCritica.total}</div>
       <div class="sub">${r.contratosVigenciaCritica.descricao}</div>
     </div>
