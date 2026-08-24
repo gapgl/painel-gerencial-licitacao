@@ -37,7 +37,7 @@ const SHEET_URLS = {
   // em vez de sobrescrever o ano anterior. Para adicionar um novo ano no
   // futuro, é só acrescentar mais uma linha aqui — nenhum código muda.
   pcaAnos: {
-    "2026": "",
-    "2027": ""
+    "2026": "https://docs.google.com/spreadsheets/d/e/2PACX-1vRzFqJ721YD8hG32ZlyES8A4Na5bZ3YLmYmMRr5PiCXeMTc5VCKykJh9tCYuMbQ-bwlFkdSlVemaHKy/pub?gid=1328699524&single=true&output=csv",
+    "2027": "https://docs.google.com/spreadsheets/d/e/2PACX-1vRzFqJ721YD8hG32ZlyES8A4Na5bZ3YLmYmMRr5PiCXeMTc5VCKykJh9tCYuMbQ-bwlFkdSlVemaHKy/pub?gid=1575051613&single=true&output=csv"
   }
 };
