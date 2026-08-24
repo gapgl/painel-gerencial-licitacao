@@ -67,14 +67,17 @@ Copie o arquivo atualizado pra pasta do Drive e **substitua os dados nas mesmas 
 
 Detalhamento oficial do PCA, item a item, exportado do **Compras.gov** (Painel de Contratações). É um aprofundamento do mesmo PCA do Bloco 1 — não é uma fonte nova nem deve ser confundido com o Acompanhamento da Seção.
 
-⚠️ Os valores aqui são **tetos estimados de planejamento**, não execução/empenho. O painel sempre chama isso de "Valor Estimado", nunca de "gasto".
+⚠️ Os valores aqui são **valores estimados** de planejamento, não execução/empenho. O painel sempre chama isso de "Valor Estimado", nunca de "gasto".
 
-**Configuração (uma vez por ano):**
+**Cada ano fica na sua própria aba** (ex: `PCA_Detalhado_2026`, `PCA_Detalhado_2027`) — isso permite comparar anos diferentes no painel (o seletor de ano no topo da página filtra tudo) em vez de um ano sobrescrever o outro.
+
+**Configuração de um novo ano:**
 1. Baixe o PCA do ano em compras.gov
-2. Importe como uma aba nova no Google Sheets (Sheets detecta separador e acentuação sozinho)
-3. Publique como CSV e cole o link em `config.js` → `pcaDetalhado`
+2. Importe como uma aba NOVA no Google Sheets (nome sugerido: `PCA_Detalhado_2027`)
+3. Publique essa aba como CSV
+4. Abra `config.js`, ache o objeto `pcaAnos` e acrescente uma linha nova: `"2027": "seu link aqui"`
 
-**Atualização (quando quiser atualizar os dados do mesmo ano, ou trocar de ano):** reimporte o novo arquivo na MESMA aba e republique — sem reformatar nada. O modelo de referência está em `planilhas-modelo/pca_detalhado.csv`.
+Não precisa mexer em mais nada — o seletor de ano no painel detecta os anos disponíveis sozinho.
 
 ## Conectado ao Google Sheets
 

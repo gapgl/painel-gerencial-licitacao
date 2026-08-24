@@ -166,10 +166,11 @@ function parsePipelineAba(rows, categoria) {
    ANALÍTICO DO PCA — item a item, exportado do Compras.gov
    ============================================================ */
 
-function parsePcaAnalitico(rows) {
+function parsePcaAnalitico(rows, ano) {
   return rows
     .filter(r => r["Título da contratação"] && r["Título da contratação"].trim() !== "")
     .map(r => ({
+      ano,
       numero: r["Número da contratação"] || "",
       status: r["Status da contratação"] || "",
       situacao: r["Situação da Execução"] || "",
@@ -244,19 +245,25 @@ async function tryLoadFromSheets() {
     console.info("Bloco Controle de Processos: SHEET_URLS incompleto — usando dados locais de data.js.");
   }
 
-  // Bloco Analítico do PCA — independente dos outros 2 blocos
-  const blocoPcaAnaliticoConfigurado = urls && urls.pcaDetalhado;
-  if (blocoPcaAnaliticoConfigurado) {
+  // Bloco Analítico do PCA — independente dos outros 2 blocos. Busca TODOS
+  // os anos configurados (que tiverem link preenchido) em paralelo.
+  const anosConfigurados = urls && urls.pcaAnos
+    ? Object.entries(urls.pcaAnos).filter(([, url]) => url && url.trim() !== "")
+    : [];
+
+  if (anosConfigurados.length > 0) {
     try {
-      const pcaRows = await fetchCSV(urls.pcaDetalhado);
-      DASHBOARD_DATA.pcaAnalitico.itens = parsePcaAnalitico(pcaRows);
-      console.info("Analítico do PCA atualizado a partir do Google Sheets.");
+      const resultadosPorAno = await Promise.all(
+        anosConfigurados.map(([ano, url]) => fetchCSV(url).then(rows => parsePcaAnalitico(rows, ano)))
+      );
+      DASHBOARD_DATA.pcaAnalitico.itens = resultadosPorAno.flat();
+      console.info(`Analítico do PCA atualizado (${anosConfigurados.map(a => a[0]).join(", ")}).`);
     } catch (err) {
       console.error("Falha ao carregar Analítico do PCA:", err);
     }
   } else {
-    console.info("Analítico do PCA: SHEET_URLS.pcaDetalhado vazio — usando dados locais de data.js.");
+    console.info("Analítico do PCA: nenhum ano configurado em pcaAnos — usando dados locais de data.js.");
   }
 
-  return blocoPCAConfigurado || blocoProcessosConfigurado || blocoPcaAnaliticoConfigurado;
+  return blocoPCAConfigurado || blocoProcessosConfigurado || anosConfigurados.length > 0;
 }

@@ -492,12 +492,68 @@ function formatarMoeda(valor) {
   return "R$ " + Number(valor).toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 
+const CATEGORIA_LABELS = { "BENS": "Bens", "SERVICOS": "Serviços", "CONTRATACOES_TIC": "TIC" };
+const CATEGORIA_CORES  = { "BENS": "#3b82f6", "SERVICOS": "#14b8a6", "CONTRATACOES_TIC": "#b45309" };
+const PRIORIDADE_CORES = { "Alto": "#e34848", "Médio": "#f5a623", "Baixo": "#22c55e" };
+const SITUACAO_LABELS  = { "nao_iniciado": "Não Iniciado", "Preparação": "Preparação", "Edição": "Edição",
+                            "Divulgada": "Divulgada", "Fase Externa": "Fase Externa", "Suspensa": "Suspensa" };
+const SITUACAO_CORES   = { "nao_iniciado": "#94a3b8", "Preparação": "#3b82f6", "Edição": "#b45309",
+                            "Divulgada": "#14b8a6", "Fase Externa": "#22c55e", "Suspensa": "#e34848" };
+
+/** Estado dos filtros da página Analítico do PCA. */
+let filtroPca = { ano: "2026", categoria: "todos", prioridade: "todos", situacao: "todos", busca: "" };
+
+/** Retorna a chave de situação usada para contagem/filtro ("" vira "nao_iniciado"). */
+function chaveSituacao(situacaoBruta) {
+  return (!situacaoBruta || situacaoBruta.trim() === "") ? "nao_iniciado" : situacaoBruta.trim();
+}
+
+/** Todos os itens do ano selecionado no filtro global da página (ou todos os anos). */
+function getItensAnoPca() {
+  const todos = DASHBOARD_DATA.pcaAnalitico.itens;
+  return filtroPca.ano === "todos" ? todos : todos.filter(i => i.ano === filtroPca.ano);
+}
+
+/** Itens do ano selecionado, com os filtros refinados (categoria/prioridade/situação/busca). */
+function getItensFiltradosPca() {
+  const busca = filtroPca.busca.trim().toLowerCase();
+  return getItensAnoPca().filter(i => {
+    const catOk = filtroPca.categoria === "todos" || i.categoria === filtroPca.categoria;
+    const prioOk = filtroPca.prioridade === "todos" || i.prioridade === filtroPca.prioridade;
+    const sitOk = filtroPca.situacao === "todos" || chaveSituacao(i.situacao) === filtroPca.situacao;
+    const buscaOk = !busca || `${i.titulo} ${i.areaRequisitante}`.toLowerCase().includes(busca);
+    return catOk && prioOk && sitOk && buscaOk;
+  });
+}
+
+function popularFiltroAnoPca() {
+  const anos = [...new Set(DASHBOARD_DATA.pcaAnalitico.itens.map(i => i.ano))].sort((a, b) => b - a);
+  const sel = document.getElementById("filtroAnoPca2");
+  sel.innerHTML = anos.map(a => `<option value="${a}">${a}</option>`).join("") + `<option value="todos">Todos os anos</option>`;
+  sel.value = anos[0] || "todos";
+  filtroPca.ano = sel.value;
+}
+
+/** Converte valores no formato BR ("120.000,00" ou "120000.00") em número. */
+function parseValorBR(v) {
+  if (!v) return 0;
+  v = v.trim();
+  if (v.includes(",")) {
+    return parseFloat(v.replace(/\./g, "").replace(",", ".")) || 0;
+  }
+  return parseFloat(v) || 0;
+}
+
+function formatarMoeda(valor) {
+  return "R$ " + Number(valor).toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+
 function renderPca2KPIs() {
-  const itens = DASHBOARD_DATA.pcaAnalitico.itens;
+  const itens = getItensAnoPca();
   const valorTotal = itens.reduce((soma, i) => soma + parseValorBR(i.valorTotal), 0);
   const contratacoesDistintas = new Set(itens.map(i => i.numero)).size;
   const prioridadeAlta = itens.filter(i => i.prioridade.trim().toLowerCase() === "alto").length;
-  const naoIniciados = itens.filter(i => !i.situacao || i.situacao.trim() === "").length;
+  const naoIniciados = itens.filter(i => chaveSituacao(i.situacao) === "nao_iniciado").length;
 
   document.getElementById("kpiGridPca2").innerHTML = `
     <div class="kpi tema-pca2">
@@ -505,15 +561,15 @@ function renderPca2KPIs() {
       <div class="value">${formatarMoeda(valorTotal)}</div>
       <div class="sub">${itens.length} itens &middot; ${contratacoesDistintas} contratações</div>
     </div>
-    <div class="kpi tema-pca2">
+    <div class="kpi tema-pca2 clicavel" data-campo="prioridade" data-valor="Alto">
       <div class="label">Prioridade Alta</div>
       <div class="value">${prioridadeAlta}</div>
-      <div class="sub">itens que merecem atenção próxima</div>
+      <div class="sub">clique para ver os itens &rarr;</div>
     </div>
-    <div class="kpi status-critico">
+    <div class="kpi status-critico clicavel" data-campo="situacao" data-valor="nao_iniciado">
       <div class="label">Ainda Não Iniciados</div>
       <div class="value">${naoIniciados}</div>
-      <div class="sub">${Math.round((naoIniciados / itens.length) * 100)}% do total do PCA</div>
+      <div class="sub">${itens.length ? Math.round((naoIniciados / itens.length) * 100) : 0}% do total &middot; clique para ver &rarr;</div>
     </div>
     <div class="kpi tema-pca2">
       <div class="label">Total de Itens</div>
@@ -523,14 +579,15 @@ function renderPca2KPIs() {
   `;
 }
 
-function renderLegendaGenerica(elId, contagem, cores) {
+/** Legenda clicável genérica: contagem já vem com as chaves cruas (usadas no filtro). */
+function renderLegendaClicavel(elId, contagem, cores, labels, campoFiltro) {
   const total = Object.values(contagem).reduce((a, b) => a + b, 0) || 1;
   document.getElementById(elId).innerHTML = Object.entries(contagem)
     .sort((a, b) => b[1] - a[1])
-    .map(([rotulo, qtd]) => `
-      <div class="item">
+    .map(([chave, qtd]) => `
+      <div class="item clicavel" data-campo="${campoFiltro}" data-valor="${chave}">
         <span style="display:flex;align-items:center;gap:8px;">
-          <span class="dot" style="background:${cores[rotulo] || "#94a3b8"}"></span>${rotulo}
+          <span class="dot" style="background:${cores[chave] || "#94a3b8"}"></span>${labels ? (labels[chave] || chave) : chave}
         </span>
         <strong>${qtd} <span style="font-weight:400;color:var(--text-muted);">(${Math.round((qtd / total) * 100)}%)</span></strong>
       </div>
@@ -538,55 +595,51 @@ function renderLegendaGenerica(elId, contagem, cores) {
 }
 
 function renderCategoria() {
-  const itens = DASHBOARD_DATA.pcaAnalitico.itens;
+  const itens = getItensAnoPca();
   const contagem = {};
-  itens.forEach(i => {
-    const cat = i.categoria === "CONTRATACOES_TIC" ? "TIC" : (i.categoria === "SERVICOS" ? "Serviços" : "Bens");
-    contagem[cat] = (contagem[cat] || 0) + 1;
-  });
-  renderLegendaGenerica("categoriaGrid", contagem, { "Bens": "#3b82f6", "Serviços": "#14b8a6", "TIC": "#b45309" });
+  itens.forEach(i => { contagem[i.categoria] = (contagem[i.categoria] || 0) + 1; });
+  renderLegendaClicavel("categoriaGrid", contagem, CATEGORIA_CORES, CATEGORIA_LABELS, "categoria");
 }
 
 function renderPrioridade() {
-  const itens = DASHBOARD_DATA.pcaAnalitico.itens;
+  const itens = getItensAnoPca();
   const contagem = {};
-  itens.forEach(i => {
-    const p = i.prioridade || "(não informado)";
-    contagem[p] = (contagem[p] || 0) + 1;
-  });
-  renderLegendaGenerica("prioridadeGrid", contagem, { "Alto": "#e34848", "Médio": "#f5a623", "Baixo": "#22c55e" });
+  itens.forEach(i => { const p = i.prioridade || "(não informado)"; contagem[p] = (contagem[p] || 0) + 1; });
+  renderLegendaClicavel("prioridadeGrid", contagem, PRIORIDADE_CORES, null, "prioridade");
 }
 
 function renderSituacaoExecucao() {
-  const itens = DASHBOARD_DATA.pcaAnalitico.itens;
+  const itens = getItensAnoPca();
   const contagem = {};
-  itens.forEach(i => {
-    const s = i.situacao && i.situacao.trim() !== "" ? i.situacao.trim() : "Não Iniciado";
-    contagem[s] = (contagem[s] || 0) + 1;
-  });
-  renderLegendaGenerica("situacaoGrid", contagem, {
-    "Não Iniciado": "#94a3b8", "Preparação": "#3b82f6", "Edição": "#b45309",
-    "Divulgada": "#14b8a6", "Fase Externa": "#22c55e", "Suspensa": "#e34848"
-  });
+  itens.forEach(i => { const s = chaveSituacao(i.situacao); contagem[s] = (contagem[s] || 0) + 1; });
+  renderLegendaClicavel("situacaoGrid", contagem, SITUACAO_CORES, SITUACAO_LABELS, "situacao");
 }
 
 function renderRankingArea() {
-  const itens = DASHBOARD_DATA.pcaAnalitico.itens;
+  const itens = getItensAnoPca();
 
-  const porQtd = contarPor(itens, "areaRequisitante", 8);
+  const contagemQtd = {};
+  itens.forEach(i => { const a = i.areaRequisitante || "(não informado)"; contagemQtd[a] = (contagemQtd[a] || 0) + 1; });
+  const porQtd = Object.entries(contagemQtd).sort((a, b) => b[1] - a[1]).slice(0, 8);
 
   const somaValor = {};
-  itens.forEach(i => {
-    const area = i.areaRequisitante || "(não informado)";
-    somaValor[area] = (somaValor[area] || 0) + parseValorBR(i.valorTotal);
-  });
+  itens.forEach(i => { const a = i.areaRequisitante || "(não informado)"; somaValor[a] = (somaValor[a] || 0) + parseValorBR(i.valorTotal); });
   const porValor = Object.entries(somaValor).sort((a, b) => b[1] - a[1]).slice(0, 8);
 
-  renderRankingLista("rankingAreaQtd", porQtd);
+  const maxQtd = porQtd.length ? porQtd[0][1] : 1;
+  document.getElementById("rankingAreaQtd").innerHTML = porQtd.map(([nome, qtd], idx) => `
+    <div class="ranking-item-wrap clicavel" data-campo="areaRequisitante" data-valor="${nome}">
+      <div class="ranking-nome-linha"><span class="nome">${idx + 1}. ${nome}</span></div>
+      <div style="display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px;">
+        <div class="barra-track"><div class="barra-fill" style="width:${(qtd / maxQtd) * 100}%"></div></div>
+        <div class="qtd">${qtd}</div>
+      </div>
+    </div>
+  `).join("");
 
   const maxValor = porValor.length ? porValor[0][1] : 1;
   document.getElementById("rankingAreaValor").innerHTML = porValor.map(([nome, valor], idx) => `
-    <div class="ranking-item-wrap">
+    <div class="ranking-item-wrap clicavel" data-campo="areaRequisitante" data-valor="${nome}">
       <div class="ranking-nome-linha"><span class="nome">${idx + 1}. ${nome}</span></div>
       <div style="display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px;">
         <div class="barra-track"><div class="barra-fill" style="width:${(valor / maxValor) * 100}%;background:var(--pca2-500);"></div></div>
@@ -599,7 +652,7 @@ function renderRankingArea() {
 const MESES_ABREV = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
 
 function renderCalendarioInicio() {
-  const itens = DASHBOARD_DATA.pcaAnalitico.itens;
+  const itens = getItensAnoPca();
   const contagem = {};
   itens.forEach(i => {
     if (!i.dataInicio) return;
@@ -629,12 +682,12 @@ function renderCalendarioInicio() {
 }
 
 function renderTop10Itens() {
-  const itens = [...DASHBOARD_DATA.pcaAnalitico.itens]
+  const itens = [...getItensAnoPca()]
     .sort((a, b) => parseValorBR(b.valorTotal) - parseValorBR(a.valorTotal))
     .slice(0, 10);
 
   document.getElementById("top10Body").innerHTML = itens.map(i => `
-    <tr>
+    <tr class="clicavel" data-campo="busca" data-valor="${i.titulo.replace(/"/g, "&quot;")}">
       <td>${i.titulo}</td>
       <td>${i.areaRequisitante}</td>
       <td>${i.prioridade}</td>
@@ -643,7 +696,88 @@ function renderTop10Itens() {
   `).join("");
 }
 
+/* ---------- Tabela completa "Todos os Itens do PCA" ---------- */
+
+function popularFiltrosTabelaPca() {
+  const itens = DASHBOARD_DATA.pcaAnalitico.itens;
+
+  const categorias = [...new Set(itens.map(i => i.categoria))];
+  document.getElementById("filtroCategoriaPca").innerHTML =
+    `<option value="todos">Todas as categorias</option>` +
+    categorias.map(c => `<option value="${c}">${CATEGORIA_LABELS[c] || c}</option>`).join("");
+
+  const prioridades = [...new Set(itens.map(i => i.prioridade).filter(Boolean))];
+  document.getElementById("filtroPrioridadePca").innerHTML =
+    `<option value="todos">Todas as prioridades</option>` +
+    prioridades.map(p => `<option value="${p}">${p}</option>`).join("");
+
+  const situacoes = [...new Set(itens.map(i => chaveSituacao(i.situacao)))];
+  document.getElementById("filtroSituacaoPca").innerHTML =
+    `<option value="todos">Todas as situações</option>` +
+    situacoes.map(s => `<option value="${s}">${SITUACAO_LABELS[s] || s}</option>`).join("");
+}
+
+/** Sincroniza os <select> visuais com o estado atual (usado após clique em legenda/ranking/KPI). */
+function sincronizarFiltrosTabelaPca() {
+  document.getElementById("filtroCategoriaPca").value = filtroPca.categoria;
+  document.getElementById("filtroPrioridadePca").value = filtroPca.prioridade;
+  document.getElementById("filtroSituacaoPca").value = filtroPca.situacao;
+  document.getElementById("filtroBuscaPca").value = filtroPca.busca;
+}
+
+function renderTabelaPca() {
+  const itens = getItensFiltradosPca();
+  document.getElementById("pca2TabelaCount").textContent = `${itens.length} de ${DASHBOARD_DATA.pcaAnalitico.itens.length} itens`;
+
+  document.getElementById("pca2TabelaBody").innerHTML = itens.map(i => `
+    <tr>
+      <td>${i.ano}</td>
+      <td>${i.titulo}</td>
+      <td>${i.areaRequisitante}</td>
+      <td>${CATEGORIA_LABELS[i.categoria] || i.categoria}</td>
+      <td>${i.prioridade}</td>
+      <td>${SITUACAO_LABELS[chaveSituacao(i.situacao)]}</td>
+      <td>${i.dataInicio || "-"}</td>
+      <td style="font-weight:700;">${formatarMoeda(parseValorBR(i.valorTotal))}</td>
+    </tr>
+  `).join("");
+}
+
+function setupFiltrosTabelaPca() {
+  document.getElementById("filtroCategoriaPca").addEventListener("change", e => { filtroPca.categoria = e.target.value; renderTabelaPca(); });
+  document.getElementById("filtroPrioridadePca").addEventListener("change", e => { filtroPca.prioridade = e.target.value; renderTabelaPca(); });
+  document.getElementById("filtroSituacaoPca").addEventListener("change", e => { filtroPca.situacao = e.target.value; renderTabelaPca(); });
+  document.getElementById("filtroBuscaPca").addEventListener("input", e => { filtroPca.busca = e.target.value; renderTabelaPca(); });
+  document.getElementById("limparFiltrosPca").addEventListener("click", () => {
+    filtroPca.categoria = "todos"; filtroPca.prioridade = "todos"; filtroPca.situacao = "todos"; filtroPca.busca = "";
+    sincronizarFiltrosTabelaPca();
+    renderTabelaPca();
+  });
+  document.getElementById("filtroAnoPca2").addEventListener("change", e => {
+    filtroPca.ano = e.target.value;
+    renderAnaliticoPca2();
+  });
+}
+
+/** Clique em qualquer número/legenda/ranking do PCA: aplica o filtro e mostra a tabela. */
+function setupCliquesFiltroPca() {
+  document.getElementById("page-pca2").addEventListener("click", e => {
+    const alvo = e.target.closest("[data-campo]");
+    if (!alvo) return;
+    filtroPca[alvo.dataset.campo] = alvo.dataset.valor;
+    if (alvo.dataset.campo !== "busca") {
+      // ao filtrar por categoria/prioridade/situação/área, limpa a busca livre
+      filtroPca.busca = "";
+    }
+    sincronizarFiltrosTabelaPca();
+    renderTabelaPca();
+    document.getElementById("pca2-todositens").scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+}
+
 function renderAnaliticoPca2() {
+  popularFiltroAnoPca();
+  popularFiltrosTabelaPca();
   renderPca2KPIs();
   renderCategoria();
   renderPrioridade();
@@ -651,7 +785,9 @@ function renderAnaliticoPca2() {
   renderRankingArea();
   renderCalendarioInicio();
   renderTop10Itens();
+  renderTabelaPca();
 }
+
 
 let filtroAtivo = "todos";
 
@@ -708,6 +844,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupFiltrosProcessos();
   setupPipelineTabs();
   setupNavegacao();
+  setupFiltrosTabelaPca();
+  setupCliquesFiltroPca();
   renderAll();
 
   // 2) Tenta atualizar com os dados do Google Sheets, se configurado.

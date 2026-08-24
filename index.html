@@ -50,6 +50,7 @@
       <a href="#pca2-ranking" class="sidebar-link" data-page="pca2"><span class="idx">3</span> Ranking por Área</a>
       <a href="#pca2-calendario" class="sidebar-link" data-page="pca2"><span class="idx">4</span> Calendário de Início</a>
       <a href="#pca2-top10" class="sidebar-link" data-page="pca2"><span class="idx">5</span> Maiores Itens</a>
+      <a href="#pca2-todositens" class="sidebar-link" data-page="pca2"><span class="idx">6</span> Todos os Itens</a>
     </div>
 
     <div class="sidebar-group" data-grupo="secao">
@@ -151,6 +152,7 @@
     <div class="pagina-titulo tema-pca2">
       <span class="tag">Analítico do PCA</span>
       <h1>Detalhamento Oficial (Compras.gov)</h1>
+      <select id="filtroAnoPca2" style="margin-left:auto;border:1px solid var(--border);border-radius:10px;padding:8px 14px;font-weight:700;color:var(--pca2-600);"></select>
     </div>
 
     <section id="pca2-kpis">
@@ -238,6 +240,39 @@
           </thead>
           <tbody id="top10Body"></tbody>
         </table>
+      </div>
+    </section>
+
+    <section id="pca2-todositens">
+      <div class="section-head">
+        <h2>6. Todos os Itens do PCA</h2>
+        <span id="pca2TabelaCount"></span>
+      </div>
+      <div class="panel">
+        <div class="filtros-processos">
+          <select id="filtroCategoriaPca"></select>
+          <select id="filtroPrioridadePca"></select>
+          <select id="filtroSituacaoPca"></select>
+          <input type="text" id="filtroBuscaPca" placeholder="Buscar por título ou área requisitante...">
+          <button id="limparFiltrosPca" style="border:1px solid var(--border);background:#fff;border-radius:10px;padding:9px 14px;font-size:13px;font-weight:700;color:var(--text-muted);cursor:pointer;">Limpar filtros</button>
+        </div>
+        <div class="tabela-scroll">
+          <table class="contratos">
+            <thead>
+              <tr>
+                <th>Ano</th>
+                <th>Título</th>
+                <th>Área Requisitante</th>
+                <th>Categoria</th>
+                <th>Prioridade</th>
+                <th>Situação</th>
+                <th>Início Estimado</th>
+                <th>Valor Estimado</th>
+              </tr>
+            </thead>
+            <tbody id="pca2TabelaBody"></tbody>
+          </table>
+        </div>
       </div>
     </section>
 

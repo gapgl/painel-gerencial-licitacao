@@ -644,6 +644,13 @@ footer {
 .pagina-titulo.tema-secao .tag { background: var(--secao-bg); color: var(--secao-600); }
 .pagina-titulo.tema-pca2 .tag { background: var(--pca2-bg); color: var(--pca2-600); }
 .pagina-titulo h1 { font-size: 20px; margin: 0; color: var(--navy-950); }
+.pagina-titulo { align-items: center; }
+
+.clicavel { cursor: pointer; transition: background .12s ease, transform .12s ease; }
+.status-legend-grid .item.clicavel:hover { background: var(--bg); border-radius: 8px; }
+.kpi.clicavel:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(20,30,60,0.12); }
+.ranking-item-wrap.clicavel:hover { opacity: 0.75; }
+table.contratos tr.clicavel:hover { background: var(--pca2-bg); cursor: pointer; }
 
 /* ---------- Filtros de processos ---------- */
 .filtros-processos {

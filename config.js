@@ -32,9 +32,12 @@ const SHEET_URLS = {
   pipelinePermanentes: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ21GEEIEkCMGcqzO5UXHKmibyCAi058HICUfo71cYgaVNKkYxts8_jUlZ7d9V0tud3_Y8fv-SCSZpQ/pub?gid=1922832749&single=true&output=csv",
 
   // --- Analítico do PCA (detalhamento oficial, item a item, do Compras.gov) ---
-  // Fluxo: baixe o PCA do ano em compras.gov (Painel de Contratações), importe
-  // como uma nova aba no Google Sheets (o Sheets detecta separador e acentos
-  // automaticamente), publique como CSV e cole o link abaixo. Nos próximos
-  // anos, é só reimportar o novo arquivo na MESMA aba — sem reformatar nada.
-  pcaDetalhado: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRzFqJ721YD8hG32ZlyES8A4Na5bZ3YLmYmMRr5PiCXeMTc5VCKykJh9tCYuMbQ-bwlFkdSlVemaHKy/pub?gid=1328699524&single=true&output=csv"
+  // Um link PARA CADA ANO, numa aba própria (ex: PCA_Detalhado_2026,
+  // PCA_Detalhado_2027...). Isso permite comparar anos diferentes no painel,
+  // em vez de sobrescrever o ano anterior. Para adicionar um novo ano no
+  // futuro, é só acrescentar mais uma linha aqui — nenhum código muda.
+  pcaAnos: {
+    "2026": "",
+    "2027": ""
+  }
 };
