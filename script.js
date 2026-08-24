@@ -530,8 +530,12 @@ function popularFiltroAnoPca() {
   const anos = [...new Set(DASHBOARD_DATA.pcaAnalitico.itens.map(i => i.ano))].sort((a, b) => b - a);
   const sel = document.getElementById("filtroAnoPca2");
   sel.innerHTML = anos.map(a => `<option value="${a}">${a}</option>`).join("") + `<option value="todos">Todos os anos</option>`;
-  sel.value = anos[0] || "todos";
-  filtroPca.ano = sel.value;
+
+  // Padrão: o ano-calendário atual, se ele existir entre os dados; senão, o mais recente disponível.
+  const anoAtual = String(new Date().getFullYear());
+  const padrao = anos.includes(anoAtual) ? anoAtual : (anos[0] || "todos");
+  sel.value = padrao;
+  filtroPca.ano = padrao;
 }
 
 /** Converte valores no formato BR ("120.000,00" ou "120000.00") em número. */
@@ -776,7 +780,6 @@ function setupCliquesFiltroPca() {
 }
 
 function renderAnaliticoPca2() {
-  popularFiltroAnoPca();
   popularFiltrosTabelaPca();
   renderPca2KPIs();
   renderCategoria();
@@ -834,6 +837,7 @@ function renderAll() {
   atualizarAcompanhamentoProcessos();
   renderAtas();
   renderPipeline();
+  popularFiltroAnoPca();
   renderAnaliticoPca2();
 }
 
