@@ -43,6 +43,15 @@
       <a href="#rag-contratos" class="sidebar-link" data-page="rag"><span class="idx">2</span> Contratos Administrativos</a>
     </div>
 
+    <div class="sidebar-group" data-grupo="pca2">
+      <div class="sidebar-group-title">Analítico do PCA</div>
+      <a href="#pca2-kpis" class="sidebar-link" data-page="pca2"><span class="idx">1</span> Visão Geral</a>
+      <a href="#pca2-situacao" class="sidebar-link" data-page="pca2"><span class="idx">2</span> Situação da Execução</a>
+      <a href="#pca2-ranking" class="sidebar-link" data-page="pca2"><span class="idx">3</span> Ranking por Área</a>
+      <a href="#pca2-calendario" class="sidebar-link" data-page="pca2"><span class="idx">4</span> Calendário de Início</a>
+      <a href="#pca2-top10" class="sidebar-link" data-page="pca2"><span class="idx">5</span> Maiores Itens</a>
+    </div>
+
     <div class="sidebar-group" data-grupo="secao">
       <div class="sidebar-group-title">Acompanhamento da Seção</div>
       <a href="#secao-processos" class="sidebar-link" data-page="secao"><span class="idx">1</span> Acompanhamento de Processos</a>
@@ -136,7 +145,105 @@
 
   </main>
 
-  <!-- ============== PÁGINA 2 — ACOMPANHAMENTO DA SEÇÃO ============== -->
+  <!-- ============== PÁGINA 2 — ANALÍTICO DO PCA ============== -->
+  <main id="page-pca2" class="hidden">
+
+    <div class="pagina-titulo tema-pca2">
+      <span class="tag">Analítico do PCA</span>
+      <h1>Detalhamento Oficial (Compras.gov)</h1>
+    </div>
+
+    <section id="pca2-kpis">
+      <div class="section-head">
+        <h2>1. Visão Geral</h2>
+        <span>Fonte: Compras.gov &middot; Painel de Contratações (PCA 2026)</span>
+      </div>
+      <div class="kpi-grid" id="kpiGridPca2"></div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <h2>Categoria da Demanda</h2>
+        <span>Bens, Serviços e TIC</span>
+      </div>
+      <div class="panel">
+        <div class="status-legend-grid" id="categoriaGrid"></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <h2>Prioridade Declarada</h2>
+      </div>
+      <div class="panel">
+        <div class="status-legend-grid" id="prioridadeGrid"></div>
+      </div>
+    </section>
+
+    <section id="pca2-situacao">
+      <div class="section-head">
+        <h2>2. Situação da Execução</h2>
+        <span>O "termômetro" real do plano</span>
+      </div>
+      <div class="panel">
+        <div class="status-legend-grid" id="situacaoGrid"></div>
+      </div>
+    </section>
+
+    <section id="pca2-ranking">
+      <div class="section-head">
+        <h2>3. Ranking por Área Requisitante</h2>
+        <span>Quem mais demanda contratações</span>
+      </div>
+      <div class="grid-2">
+        <div class="panel">
+          <div class="section-head" style="margin-bottom:14px;">
+            <h2 style="font-size:14px;">Por Quantidade de Itens</h2>
+          </div>
+          <div class="ranking-list" id="rankingAreaQtd"></div>
+        </div>
+        <div class="panel">
+          <div class="section-head" style="margin-bottom:14px;">
+            <h2 style="font-size:14px;">Por Valor Estimado</h2>
+          </div>
+          <div class="ranking-list" id="rankingAreaValor"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="pca2-calendario">
+      <div class="section-head">
+        <h2>4. Calendário de Início Estimado</h2>
+        <span>Previsão de carga de trabalho por mês</span>
+      </div>
+      <div class="panel">
+        <div id="calendarioInicio"></div>
+      </div>
+    </section>
+
+    <section id="pca2-top10">
+      <div class="section-head">
+        <h2>5. Maiores Itens do PCA</h2>
+        <span>Watchlist por valor estimado</span>
+      </div>
+      <div class="panel">
+        <table class="contratos">
+          <thead>
+            <tr>
+              <th>Título</th>
+              <th>Área Requisitante</th>
+              <th>Prioridade</th>
+              <th>Valor Estimado</th>
+            </tr>
+          </thead>
+          <tbody id="top10Body"></tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ============== PÁGINA 3 — ACOMPANHAMENTO DA SEÇÃO ============== -->
   <main id="page-secao" class="hidden">
 
     <div class="pagina-titulo tema-secao">

@@ -162,6 +162,30 @@ function parsePipelineAba(rows, categoria) {
     }));
 }
 
+/* ============================================================
+   ANALÍTICO DO PCA — item a item, exportado do Compras.gov
+   ============================================================ */
+
+function parsePcaAnalitico(rows) {
+  return rows
+    .filter(r => r["Título da contratação"] && r["Título da contratação"].trim() !== "")
+    .map(r => ({
+      numero: r["Número da contratação"] || "",
+      status: r["Status da contratação"] || "",
+      situacao: r["Situação da Execução"] || "",
+      titulo: r["Título da contratação"] || "",
+      categoria: r["Categoria da contratação"] || "",
+      areaRequisitante: r["Área requisitante"] || "",
+      dataInicio: r["Data estimada para o início do processo de contratação"] || "",
+      dataFim: r["Data estimada para a conclusão do processo de contratação"] || "",
+      prazoDias: r["Prazo estimado de duração do processo de contratação (dias)"] || "",
+      prioridade: r["Prioridade"] || "",
+      valorUnitario: r["Valor Unitário"] || "",
+      quantidade: r["Quantidade"] || "",
+      valorTotal: r["Valor Total"] || ""
+    }));
+}
+
 /**
  * Tenta carregar os dados do Google Sheets.
  * Retorna true se conseguiu atualizar DASHBOARD_DATA, false caso
@@ -220,5 +244,19 @@ async function tryLoadFromSheets() {
     console.info("Bloco Controle de Processos: SHEET_URLS incompleto — usando dados locais de data.js.");
   }
 
-  return blocoPCAConfigurado || blocoProcessosConfigurado;
+  // Bloco Analítico do PCA — independente dos outros 2 blocos
+  const blocoPcaAnaliticoConfigurado = urls && urls.pcaDetalhado;
+  if (blocoPcaAnaliticoConfigurado) {
+    try {
+      const pcaRows = await fetchCSV(urls.pcaDetalhado);
+      DASHBOARD_DATA.pcaAnalitico.itens = parsePcaAnalitico(pcaRows);
+      console.info("Analítico do PCA atualizado a partir do Google Sheets.");
+    } catch (err) {
+      console.error("Falha ao carregar Analítico do PCA:", err);
+    }
+  } else {
+    console.info("Analítico do PCA: SHEET_URLS.pcaDetalhado vazio — usando dados locais de data.js.");
+  }
+
+  return blocoPCAConfigurado || blocoProcessosConfigurado || blocoPcaAnaliticoConfigurado;
 }

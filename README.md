@@ -63,6 +63,19 @@ Os dados desse bloco vêm do arquivo **"1 - CONTROLE PROCESSOS.xlsx"**, mantido 
 
 Copie o arquivo atualizado pra pasta do Drive e **substitua os dados nas mesmas 5 abas** (copiar e colar os valores de novo, ou reimportar com "Substituir planilha atual"). Como as abas continuam sendo as mesmas, os links publicados continuam funcionando sem precisar mexer no `config.js` de novo. O painel recalcula tudo sozinho (contagem por status, ranking, risco de vencimento) — você não faz nenhuma conta.
 
+## Sobre o Analítico do PCA (página própria, entre Dados da RAG e Acompanhamento da Seção)
+
+Detalhamento oficial do PCA, item a item, exportado do **Compras.gov** (Painel de Contratações). É um aprofundamento do mesmo PCA do Bloco 1 — não é uma fonte nova nem deve ser confundido com o Acompanhamento da Seção.
+
+⚠️ Os valores aqui são **tetos estimados de planejamento**, não execução/empenho. O painel sempre chama isso de "Valor Estimado", nunca de "gasto".
+
+**Configuração (uma vez por ano):**
+1. Baixe o PCA do ano em compras.gov
+2. Importe como uma aba nova no Google Sheets (Sheets detecta separador e acentuação sozinho)
+3. Publique como CSV e cole o link em `config.js` → `pcaDetalhado`
+
+**Atualização (quando quiser atualizar os dados do mesmo ano, ou trocar de ano):** reimporte o novo arquivo na MESMA aba e republique — sem reformatar nada. O modelo de referência está em `planilhas-modelo/pca_detalhado.csv`.
+
 ## Conectado ao Google Sheets
 
 O painel agora consegue ler os dados direto de uma planilha do Google Sheets:

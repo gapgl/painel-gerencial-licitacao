@@ -431,6 +431,7 @@ function setupFiltrosProcessos() {
 
 function mostrarPagina(pagina) {
   document.getElementById("page-rag").classList.toggle("hidden", pagina !== "rag");
+  document.getElementById("page-pca2").classList.toggle("hidden", pagina !== "pca2");
   document.getElementById("page-secao").classList.toggle("hidden", pagina !== "secao");
   document.querySelectorAll(".sidebar-link").forEach(a => {
     a.classList.toggle("active", a.getAttribute("href") === location.hash);
@@ -471,6 +472,185 @@ function setupNavegacao() {
 
   const inicial = location.hash && document.querySelector(`.sidebar-link[href="${location.hash}"]`);
   mostrarPagina(inicial ? inicial.dataset.page : "rag");
+}
+
+/* ============================================================
+   ANALÍTICO DO PCA (Compras.gov)
+   ============================================================ */
+
+/** Converte valores no formato BR ("120.000,00" ou "120000.00") em número. */
+function parseValorBR(v) {
+  if (!v) return 0;
+  v = v.trim();
+  if (v.includes(",")) {
+    return parseFloat(v.replace(/\./g, "").replace(",", ".")) || 0;
+  }
+  return parseFloat(v) || 0;
+}
+
+function formatarMoeda(valor) {
+  return "R$ " + Number(valor).toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+
+function renderPca2KPIs() {
+  const itens = DASHBOARD_DATA.pcaAnalitico.itens;
+  const valorTotal = itens.reduce((soma, i) => soma + parseValorBR(i.valorTotal), 0);
+  const contratacoesDistintas = new Set(itens.map(i => i.numero)).size;
+  const prioridadeAlta = itens.filter(i => i.prioridade.trim().toLowerCase() === "alto").length;
+  const naoIniciados = itens.filter(i => !i.situacao || i.situacao.trim() === "").length;
+
+  document.getElementById("kpiGridPca2").innerHTML = `
+    <div class="kpi tema-pca2">
+      <div class="label">Valor Estimado (PCA)</div>
+      <div class="value">${formatarMoeda(valorTotal)}</div>
+      <div class="sub">${itens.length} itens &middot; ${contratacoesDistintas} contratações</div>
+    </div>
+    <div class="kpi tema-pca2">
+      <div class="label">Prioridade Alta</div>
+      <div class="value">${prioridadeAlta}</div>
+      <div class="sub">itens que merecem atenção próxima</div>
+    </div>
+    <div class="kpi status-critico">
+      <div class="label">Ainda Não Iniciados</div>
+      <div class="value">${naoIniciados}</div>
+      <div class="sub">${Math.round((naoIniciados / itens.length) * 100)}% do total do PCA</div>
+    </div>
+    <div class="kpi tema-pca2">
+      <div class="label">Total de Itens</div>
+      <div class="value">${itens.length}</div>
+      <div class="sub">linhas de demanda registradas</div>
+    </div>
+  `;
+}
+
+function renderLegendaGenerica(elId, contagem, cores) {
+  const total = Object.values(contagem).reduce((a, b) => a + b, 0) || 1;
+  document.getElementById(elId).innerHTML = Object.entries(contagem)
+    .sort((a, b) => b[1] - a[1])
+    .map(([rotulo, qtd]) => `
+      <div class="item">
+        <span style="display:flex;align-items:center;gap:8px;">
+          <span class="dot" style="background:${cores[rotulo] || "#94a3b8"}"></span>${rotulo}
+        </span>
+        <strong>${qtd} <span style="font-weight:400;color:var(--text-muted);">(${Math.round((qtd / total) * 100)}%)</span></strong>
+      </div>
+    `).join("");
+}
+
+function renderCategoria() {
+  const itens = DASHBOARD_DATA.pcaAnalitico.itens;
+  const contagem = {};
+  itens.forEach(i => {
+    const cat = i.categoria === "CONTRATACOES_TIC" ? "TIC" : (i.categoria === "SERVICOS" ? "Serviços" : "Bens");
+    contagem[cat] = (contagem[cat] || 0) + 1;
+  });
+  renderLegendaGenerica("categoriaGrid", contagem, { "Bens": "#3b82f6", "Serviços": "#14b8a6", "TIC": "#b45309" });
+}
+
+function renderPrioridade() {
+  const itens = DASHBOARD_DATA.pcaAnalitico.itens;
+  const contagem = {};
+  itens.forEach(i => {
+    const p = i.prioridade || "(não informado)";
+    contagem[p] = (contagem[p] || 0) + 1;
+  });
+  renderLegendaGenerica("prioridadeGrid", contagem, { "Alto": "#e34848", "Médio": "#f5a623", "Baixo": "#22c55e" });
+}
+
+function renderSituacaoExecucao() {
+  const itens = DASHBOARD_DATA.pcaAnalitico.itens;
+  const contagem = {};
+  itens.forEach(i => {
+    const s = i.situacao && i.situacao.trim() !== "" ? i.situacao.trim() : "Não Iniciado";
+    contagem[s] = (contagem[s] || 0) + 1;
+  });
+  renderLegendaGenerica("situacaoGrid", contagem, {
+    "Não Iniciado": "#94a3b8", "Preparação": "#3b82f6", "Edição": "#b45309",
+    "Divulgada": "#14b8a6", "Fase Externa": "#22c55e", "Suspensa": "#e34848"
+  });
+}
+
+function renderRankingArea() {
+  const itens = DASHBOARD_DATA.pcaAnalitico.itens;
+
+  const porQtd = contarPor(itens, "areaRequisitante", 8);
+
+  const somaValor = {};
+  itens.forEach(i => {
+    const area = i.areaRequisitante || "(não informado)";
+    somaValor[area] = (somaValor[area] || 0) + parseValorBR(i.valorTotal);
+  });
+  const porValor = Object.entries(somaValor).sort((a, b) => b[1] - a[1]).slice(0, 8);
+
+  renderRankingLista("rankingAreaQtd", porQtd);
+
+  const maxValor = porValor.length ? porValor[0][1] : 1;
+  document.getElementById("rankingAreaValor").innerHTML = porValor.map(([nome, valor], idx) => `
+    <div class="ranking-item-wrap">
+      <div class="ranking-nome-linha"><span class="nome">${idx + 1}. ${nome}</span></div>
+      <div style="display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px;">
+        <div class="barra-track"><div class="barra-fill" style="width:${(valor / maxValor) * 100}%;background:var(--pca2-500);"></div></div>
+        <div class="qtd">${formatarMoeda(valor)}</div>
+      </div>
+    </div>
+  `).join("");
+}
+
+const MESES_ABREV = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+
+function renderCalendarioInicio() {
+  const itens = DASHBOARD_DATA.pcaAnalitico.itens;
+  const contagem = {};
+  itens.forEach(i => {
+    if (!i.dataInicio) return;
+    const partes = i.dataInicio.split("/");
+    if (partes.length !== 3) return;
+    const mes = parseInt(partes[1], 10);
+    const ano = partes[2];
+    const chave = `${ano}-${String(mes).padStart(2, "0")}`;
+    contagem[chave] = (contagem[chave] || 0) + 1;
+  });
+
+  const chavesOrdenadas = Object.keys(contagem).sort();
+  const max = Math.max(...Object.values(contagem), 1);
+
+  document.getElementById("calendarioInicio").innerHTML = chavesOrdenadas.map(chave => {
+    const [ano, mes] = chave.split("-");
+    const label = `${MESES_ABREV[parseInt(mes, 10) - 1]}/${ano.slice(2)}`;
+    const qtd = contagem[chave];
+    return `
+      <div class="barra-simples-row">
+        <div class="mes-label">${label}</div>
+        <div class="barra-track"><div class="barra-fill" style="width:${(qtd / max) * 100}%"></div></div>
+        <div class="qtd">${qtd}</div>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderTop10Itens() {
+  const itens = [...DASHBOARD_DATA.pcaAnalitico.itens]
+    .sort((a, b) => parseValorBR(b.valorTotal) - parseValorBR(a.valorTotal))
+    .slice(0, 10);
+
+  document.getElementById("top10Body").innerHTML = itens.map(i => `
+    <tr>
+      <td>${i.titulo}</td>
+      <td>${i.areaRequisitante}</td>
+      <td>${i.prioridade}</td>
+      <td style="font-weight:700;">${formatarMoeda(parseValorBR(i.valorTotal))}</td>
+    </tr>
+  `).join("");
+}
+
+function renderAnaliticoPca2() {
+  renderPca2KPIs();
+  renderCategoria();
+  renderPrioridade();
+  renderSituacaoExecucao();
+  renderRankingArea();
+  renderCalendarioInicio();
+  renderTop10Itens();
 }
 
 let filtroAtivo = "todos";
@@ -518,6 +698,7 @@ function renderAll() {
   atualizarAcompanhamentoProcessos();
   renderAtas();
   renderPipeline();
+  renderAnaliticoPca2();
 }
 
 document.addEventListener("DOMContentLoaded", async () => {

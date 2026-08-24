@@ -34,6 +34,12 @@
   --secao-600: #5b21b6;
   --secao-bg: #f5f0ff;
 
+  /* Página "Analítico do PCA" — terceira identidade visual (âmbar/dourado),
+     para não ser confundida nem com o navy da RAG nem com o roxo da Seção */
+  --pca2-500: #b45309;
+  --pca2-600: #92400e;
+  --pca2-bg: #fef3e0;
+
   --radius: 14px;
   --shadow: 0 1px 2px rgba(20, 30, 60, 0.04), 0 8px 24px rgba(20, 30, 60, 0.06);
 }
@@ -617,6 +623,8 @@ footer {
 .sidebar-link.active .idx { background: var(--secao-500); color: #fff; }
 .sidebar-group[data-grupo="rag"] .sidebar-link.active { background: #eaf0fc; color: var(--navy-800); }
 .sidebar-group[data-grupo="rag"] .sidebar-link.active .idx { background: var(--navy-700); color: #fff; }
+.sidebar-group[data-grupo="pca2"] .sidebar-link.active { background: var(--pca2-bg); color: var(--pca2-600); }
+.sidebar-group[data-grupo="pca2"] .sidebar-link.active .idx { background: var(--pca2-500); color: #fff; }
 
 .pagina-titulo {
   display: flex;
@@ -634,6 +642,7 @@ footer {
 }
 .pagina-titulo.tema-rag .tag { background: #eaf0fc; color: var(--navy-800); }
 .pagina-titulo.tema-secao .tag { background: var(--secao-bg); color: var(--secao-600); }
+.pagina-titulo.tema-pca2 .tag { background: var(--pca2-bg); color: var(--pca2-600); }
 .pagina-titulo h1 { font-size: 20px; margin: 0; color: var(--navy-950); }
 
 /* ---------- Filtros de processos ---------- */
@@ -679,6 +688,31 @@ footer {
   background: var(--secao-500);
   border-color: var(--secao-500);
   color: #fff;
+}
+
+/* ---------- Página Analítico do PCA (tema âmbar) ---------- */
+.kpi.tema-pca2 { border-top-color: var(--pca2-500); }
+
+.barra-simples-row {
+  display: grid;
+  grid-template-columns: 70px 1fr 40px;
+  align-items: center;
+  gap: 10px;
+  font-size: 12.5px;
+  padding: 5px 0;
+}
+.barra-simples-row .mes-label { color: var(--text-muted); }
+.barra-simples-row .barra-track { height: 9px; background: var(--pca2-bg); border-radius: 5px; overflow: hidden; }
+.barra-simples-row .barra-fill { height: 100%; background: var(--pca2-500); border-radius: 5px; }
+.barra-simples-row .qtd { text-align: right; font-weight: 700; color: var(--navy-950); }
+
+.destaque-alto {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--crit-fg);
 }
 
 @media (max-width: 900px) {
