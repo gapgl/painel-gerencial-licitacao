@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel Gerencial - Licitações e Contratos | GAP-GL</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="crest">GAP<br>GL</div>
+      <div>
+        <h1>Painel Gerencial &middot; Licitações e Contratos</h1>
+        <p>Grupamento de Apoio do Galeão</p>
+      </div>
+    </div>
+    <div class="meta">
+      Período de referência: <strong id="periodo">-</strong><br>
+      Atualizado em: <strong id="atualizadoEm">-</strong>
+    </div>
+  </header>
+
+  <main>
+
+    <section>
+      <div class="kpi-grid" id="kpiGrid"></div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <h2>Plano Anual de Contratações (PAC)</h2>
+        <span>Planejado vs. Realizado</span>
+      </div>
+      <div class="grid-2">
+        <div class="panel">
+          <div id="pacRows"></div>
+          <div class="legend">
+            <span><span class="dot planejado"></span>Planejado</span>
+            <span><span class="dot realizado"></span>Realizado</span>
+          </div>
+        </div>
+        <div class="panel donut-wrap">
+          <canvas id="pacDonut" width="200" height="200"></canvas>
+          <div class="donut-caption">
+            <div class="big" id="donutBig">0%</div>
+            <div class="small">Contratações concluídas<br>sobre o planejado</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <h2>Indicadores de Desempenho</h2>
+        <span>Área 9 &middot; Licitações e Contratos</span>
+      </div>
+      <div class="panel">
+        <div class="ind-grid" id="indGrid"></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <h2>Gerenciamento das Contratações</h2>
+        <span>Vigência de contratos e atas</span>
+      </div>
+      <div class="panel">
+        <div class="section-head" style="margin-bottom:14px;">
+          <div class="filters">
+            <button class="active" data-filtro="todos">Todos</button>
+            <button data-filtro="critico">Crítico</button>
+            <button data-filtro="atencao">Atenção</button>
+            <button data-filtro="planejamento">Planejamento</button>
+          </div>
+          <span id="contratosCount"></span>
+        </div>
+        <table class="contratos">
+          <thead>
+            <tr>
+              <th>Serviço / Objeto</th>
+              <th>NUP</th>
+              <th>Vencimento</th>
+              <th>Status</th>
+              <th>Providências</th>
+            </tr>
+          </thead>
+          <tbody id="contratosBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    Painel construído a partir dos dados da Reunião de Avaliação da Gestão do GAP-GL &middot; Fonte: PNCP / SILOMS / SIAFI / Controle Interno
+  </footer>
+
+  <script src="data.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
