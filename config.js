@@ -12,8 +12,8 @@
    ============================================================ */
 
 const SHEET_URLS = {
-  resumo: "",
-  pca: "",
-  indicadores: "",
-  contratos: ""
+  resumo: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRzFqJ721YD8hG32ZlyES8A4Na5bZ3YLmYmMRr5PiCXeMTc5VCKykJh9tCYuMbQ-bwlFkdSlVemaHKy/pub?gid=505338237&single=true&output=csv",
+  pca: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRzFqJ721YD8hG32ZlyES8A4Na5bZ3YLmYmMRr5PiCXeMTc5VCKykJh9tCYuMbQ-bwlFkdSlVemaHKy/pub?gid=234112692&single=true&output=csv",
+  indicadores: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRzFqJ721YD8hG32ZlyES8A4Na5bZ3YLmYmMRr5PiCXeMTc5VCKykJh9tCYuMbQ-bwlFkdSlVemaHKy/pub?gid=1607426912&single=true&output=csv",
+  contratos: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRzFqJ721YD8hG32ZlyES8A4Na5bZ3YLmYmMRr5PiCXeMTc5VCKykJh9tCYuMbQ-bwlFkdSlVemaHKy/pub?gid=18204474&single=true&output=csv"
 };
