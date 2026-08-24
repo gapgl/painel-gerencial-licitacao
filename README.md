@@ -21,6 +21,20 @@ Painel de governança com os indicadores de Licitações e Contratos do Grupamen
 2. Em "Branch", selecione `main` e a pasta `/root`
 3. Salve — o GitHub te dá um link tipo `https://seu-usuario.github.io/nome-do-repositorio/`
 
+## Regra da aba "Indicadores"
+
+Para poder usar fórmulas na planilha, as colunas `meta` e `realizado` da aba **Indicadores** devem ser **sempre números puros** (ex: `90`, não `90 dias`).
+
+A unidade de medida (dias, horas, %) vai entre parênteses **no final** da coluna `nome`:
+
+```
+nome: "Tempo Médio de Planejamento (Baixa Complexidade) (dias)"
+meta: 70
+realizado: 90
+```
+
+O site sozinho separa o "(dias)" do nome e mostra "90 dias" na tela — você só precisa manter essa regra ao criar um indicador novo.
+
 ## Conectado ao Google Sheets
 
 O painel agora consegue ler os dados direto de uma planilha do Google Sheets:

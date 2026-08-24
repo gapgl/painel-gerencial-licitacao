@@ -61,17 +61,10 @@ html, body {
 }
 
 .topbar .brand .crest {
-  width: 42px;
-  height: 42px;
-  border-radius: 10px;
-  background: var(--gold-500);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 800;
-  color: var(--navy-950);
-  font-size: 14px;
-  letter-spacing: 0.5px;
+  width: 44px;
+  height: 54px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 
 .topbar .brand h1 {
@@ -194,8 +187,8 @@ section {
   gap: 16px;
 }
 
-/* ---------- PAC bars ---------- */
-.pac-row {
+/* ---------- PCA bars ---------- */
+.pca-row {
   display: grid;
   grid-template-columns: 220px 1fr 90px;
   align-items: center;
@@ -204,33 +197,33 @@ section {
   border-bottom: 1px solid var(--border);
   font-size: 13px;
 }
-.pac-row:last-child { border-bottom: none; }
+.pca-row:last-child { border-bottom: none; }
 
-.pac-track {
+.pca-track {
   position: relative;
   height: 10px;
   background: #eef1f8;
   border-radius: 6px;
   overflow: hidden;
 }
-.pac-planejado {
+.pca-planejado {
   position: absolute;
   inset: 0;
   background: #dbe3f3;
   border-radius: 6px;
 }
-.pac-realizado {
+.pca-realizado {
   position: absolute;
   inset: 0;
   background: var(--navy-700);
   border-radius: 6px;
 }
-.pac-nums {
+.pca-nums {
   text-align: right;
   font-variant-numeric: tabular-nums;
   color: var(--text-muted);
 }
-.pac-nums strong { color: var(--navy-950); }
+.pca-nums strong { color: var(--navy-950); }
 
 .legend {
   display: flex;
@@ -255,7 +248,7 @@ section {
   justify-content: center;
   flex-direction: column;
 }
-#pacDonut { max-width: 220px; }
+#pcaDonut { max-width: 220px; }
 .donut-caption {
   margin-top: 10px;
   text-align: center;
@@ -377,7 +370,7 @@ footer {
   .kpi-grid { grid-template-columns: repeat(2, 1fr); }
   .grid-2 { grid-template-columns: 1fr; }
   .ind-grid { grid-template-columns: 1fr; }
-  .pac-row { grid-template-columns: 1fr; }
-  .pac-nums { text-align: left; }
+  .pca-row { grid-template-columns: 1fr; }
+  .pca-nums { text-align: left; }
   table.contratos { display: block; overflow-x: auto; }
 }

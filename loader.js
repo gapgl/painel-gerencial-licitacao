@@ -79,7 +79,7 @@ function parseResumo(rows) {
   };
 }
 
-function parsePac(rows) {
+function parsePca(rows) {
   return rows.map(r => ({
     etapa: r.etapa,
     planejado: parseFloat(r.planejado.replace(",", ".")),
@@ -88,10 +88,12 @@ function parsePac(rows) {
 }
 
 function parseIndicadores(rows) {
+  // "nome" continua com a unidade entre parênteses no final (ex: "... (dias)").
+  // "meta" e "realizado" agora chegam como número puro da planilha.
   return rows.map(r => ({
     nome: r.nome,
-    meta: r.meta,
-    realizado: r.realizado,
+    meta: parseFloat(r.meta.replace(",", ".")),
+    realizado: parseFloat(r.realizado.replace(",", ".")),
     percentual: parseFloat(r.percentual.replace(",", ".")),
     status: r.status.trim().toLowerCase()
   }));
@@ -114,21 +116,21 @@ function parseContratos(rows) {
  */
 async function tryLoadFromSheets() {
   const urls = typeof SHEET_URLS !== "undefined" ? SHEET_URLS : null;
-  if (!urls || !urls.resumo || !urls.pac || !urls.indicadores || !urls.contratos) {
+  if (!urls || !urls.resumo || !urls.pca || !urls.indicadores || !urls.contratos) {
     console.info("SHEET_URLS não configurado ainda — usando dados locais de data.js.");
     return false;
   }
 
   try {
-    const [resumoRows, pacRows, indRows, contratosRows] = await Promise.all([
+    const [resumoRows, pcaRows, indRows, contratosRows] = await Promise.all([
       fetchCSV(urls.resumo),
-      fetchCSV(urls.pac),
+      fetchCSV(urls.pca),
       fetchCSV(urls.indicadores),
       fetchCSV(urls.contratos)
     ]);
 
     DASHBOARD_DATA.resumo = parseResumo(resumoRows);
-    DASHBOARD_DATA.pac = parsePac(pacRows);
+    DASHBOARD_DATA.pca = parsePca(pcaRows);
     DASHBOARD_DATA.indicadores = parseIndicadores(indRows);
     DASHBOARD_DATA.contratos = parseContratos(contratosRows);
 

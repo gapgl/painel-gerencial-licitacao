@@ -26,8 +26,8 @@ let DASHBOARD_DATA = {
     indicadoresCriticos: { total: 3, totalIndicadores: 9 }
   },
 
-  // ---- Plano Anual de Contratações (PAC) ----
-  pac: [
+  // ---- Plano de Contratações Anual (PCA) ----
+  pca: [
     { etapa: "Concluídas (Homologadas)",     planejado: 53, realizado: 13 },
     { etapa: "Em andamento (Fase interna)",  planejado: 78, realizado: 23 },
     { etapa: "Editais Publicados (Fase Ext.)", planejado: 78, realizado: 17 },
@@ -37,42 +37,46 @@ let DASHBOARD_DATA = {
 
   // ---- Indicadores de desempenho - área "Licitações e Contratos" ----
   // status: "adequado" | "atencao" | "critico"
+  // meta/realizado agora são NÚMEROS PUROS (sem "dias"/"horas"/"%"),
+  // para permitir fórmulas na planilha. A unidade de medida vai entre
+  // parênteses no FINAL do campo "nome" (ex: "(dias)", "(horas)", "(%)")
+  // e o site extrai isso sozinho na hora de mostrar na tela.
   indicadores: [
     {
-      nome: "Indicador de Execução do PCA",
-      meta: "100%", realizado: "16,6%", percentual: 17, status: "critico"
+      nome: "Indicador de Execução do PCA (%)",
+      meta: 100, realizado: 16.6, percentual: 17, status: "critico"
     },
     {
-      nome: "Tempo Médio de Planejamento (Baixa Complexidade)",
-      meta: "70 dias", realizado: "90 dias", percentual: 78, status: "atencao"
+      nome: "Tempo Médio de Planejamento (Baixa Complexidade) (dias)",
+      meta: 70, realizado: 90, percentual: 78, status: "atencao"
     },
     {
-      nome: "Tempo Médio de Planejamento (Média Complexidade)",
-      meta: "97 dias", realizado: "68 dias", percentual: 100, status: "adequado"
+      nome: "Tempo Médio de Planejamento (Média Complexidade) (dias)",
+      meta: 97, realizado: 68, percentual: 100, status: "adequado"
     },
     {
-      nome: "Tempo Médio de Planejamento (Alta Complexidade)",
-      meta: "130 dias", realizado: "118 dias", percentual: 100, status: "adequado"
+      nome: "Tempo Médio de Planejamento (Alta Complexidade) (dias)",
+      meta: 130, realizado: 118, percentual: 100, status: "adequado"
     },
     {
-      nome: "Tempo Médio de Recebimento de Bens e Serviços",
-      meta: "5 dias", realizado: "12 dias", percentual: 42, status: "critico"
+      nome: "Tempo Médio de Recebimento de Bens e Serviços (dias)",
+      meta: 5, realizado: 12, percentual: 42, status: "critico"
     },
     {
-      nome: "Tempo Médio de Liquidação de NF/Fatura",
-      meta: "72 horas", realizado: "24 horas", percentual: 100, status: "adequado"
+      nome: "Tempo Médio de Liquidação de NF/Fatura (horas)",
+      meta: 72, realizado: 24, percentual: 100, status: "adequado"
     },
     {
-      nome: "Tempo Médio para Emissão de Empenho",
-      meta: "72 horas", realizado: "96 horas", percentual: 75, status: "atencao"
+      nome: "Tempo Médio para Emissão de Empenho (horas)",
+      meta: 72, realizado: 96, percentual: 75, status: "atencao"
     },
     {
-      nome: "Tempo Médio para Assinatura de Contrato",
-      meta: "15 dias", realizado: "48 dias", percentual: 31, status: "critico"
+      nome: "Tempo Médio para Assinatura de Contrato (dias)",
+      meta: 15, realizado: 48, percentual: 31, status: "critico"
     },
     {
-      nome: "Tempo Médio de Publicação do Contrato",
-      meta: "10 dias", realizado: "12 dias", percentual: 83, status: "atencao"
+      nome: "Tempo Médio de Publicação do Contrato (dias)",
+      meta: 10, realizado: 12, percentual: 83, status: "atencao"
     }
   ],
 

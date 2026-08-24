@@ -48,30 +48,30 @@ function renderKPIs() {
   `;
 }
 
-/* ---------- PAC (barras) ---------- */
-function renderPAC() {
-  const el = document.getElementById("pacRows");
-  const maxVal = Math.max(...DASHBOARD_DATA.pac.map(p => p.planejado), 1);
+/* ---------- PCA (barras) ---------- */
+function renderPCA() {
+  const el = document.getElementById("pcaRows");
+  const maxVal = Math.max(...DASHBOARD_DATA.pca.map(p => p.planejado), 1);
 
-  el.innerHTML = DASHBOARD_DATA.pac.map(p => {
+  el.innerHTML = DASHBOARD_DATA.pca.map(p => {
     const wPlan = (p.planejado / maxVal) * 100;
     const wReal = (p.realizado / maxVal) * 100;
     return `
-      <div class="pac-row">
+      <div class="pca-row">
         <div>${p.etapa}</div>
-        <div class="pac-track">
-          <div class="pac-planejado" style="width:${wPlan}%"></div>
-          <div class="pac-realizado" style="width:${wReal}%"></div>
+        <div class="pca-track">
+          <div class="pca-planejado" style="width:${wPlan}%"></div>
+          <div class="pca-realizado" style="width:${wReal}%"></div>
         </div>
-        <div class="pac-nums"><strong>${p.realizado}</strong> / ${p.planejado}</div>
+        <div class="pca-nums"><strong>${p.realizado}</strong> / ${p.planejado}</div>
       </div>
     `;
   }).join("");
 
   // Donut: total realizado das etapas "Concluídas" sobre planejado
-  const conc = DASHBOARD_DATA.pac.find(p => p.etapa.includes("Concluídas"));
+  const conc = DASHBOARD_DATA.pca.find(p => p.etapa.includes("Concluídas"));
   const pct = Math.round((conc.realizado / conc.planejado) * 100);
-  drawDonut("pacDonut", pct);
+  drawDonut("pcaDonut", pct);
   document.getElementById("donutBig").textContent = `${pct}%`;
 }
 
@@ -102,21 +102,51 @@ function drawDonut(canvasId, pct) {
 }
 
 /* ---------- Indicadores ---------- */
+
+/**
+ * Separa a unidade de medida que fica entre parênteses no FINAL do nome.
+ * Ex: "Tempo Médio de Planejamento (Baixa Complexidade) (dias)"
+ *  -> nome:    "Tempo Médio de Planejamento (Baixa Complexidade)"
+ *     unidade: "dias"
+ * Se não tiver parênteses no final, a unidade fica vazia.
+ */
+function extrairUnidade(nomeComUnidade) {
+  const match = nomeComUnidade.match(/\s*\(([^()]+)\)\s*$/);
+  if (match) {
+    return {
+      nome: nomeComUnidade.slice(0, match.index).trim(),
+      unidade: match[1].trim()
+    };
+  }
+  return { nome: nomeComUnidade.trim(), unidade: "" };
+}
+
+/** Formata um número puro (ex: 90) usando a unidade (ex: "90 dias", "16,6%"). */
+function formatarValor(valor, unidade) {
+  const numFormatado = Number(valor).toLocaleString("pt-BR", { maximumFractionDigits: 2 });
+  if (unidade === "%") return `${numFormatado}%`;
+  if (unidade) return `${numFormatado} ${unidade}`;
+  return numFormatado;
+}
+
 function renderIndicadores() {
   const el = document.getElementById("indGrid");
-  el.innerHTML = DASHBOARD_DATA.indicadores.map(i => `
+  el.innerHTML = DASHBOARD_DATA.indicadores.map(i => {
+    const { nome, unidade } = extrairUnidade(i.nome);
+    return `
     <div class="ind-card ${i.status}">
-      <h3>${i.nome}</h3>
+      <h3>${nome}</h3>
       <div class="ind-nums">
-        <div>Meta<strong>${i.meta}</strong></div>
-        <div>Realizado<strong>${i.realizado}</strong></div>
+        <div>Meta<strong>${formatarValor(i.meta, unidade)}</strong></div>
+        <div>Realizado<strong>${formatarValor(i.realizado, unidade)}</strong></div>
       </div>
       <div class="ind-bar-track">
         <div class="ind-bar-fill" style="width:${Math.min(i.percentual, 100)}%"></div>
       </div>
       <span class="pill ${i.status}">${i.percentual}% &middot; ${statusLabel[i.status]}</span>
     </div>
-  `).join("");
+  `;
+  }).join("");
 }
 
 /* ---------- Tabela de contratos ---------- */
@@ -157,7 +187,7 @@ function setupFilters() {
 function renderAll() {
   renderMeta();
   renderKPIs();
-  renderPAC();
+  renderPCA();
   renderIndicadores();
   renderContratos();
 }
