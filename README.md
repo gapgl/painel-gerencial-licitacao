@@ -21,7 +21,18 @@ Painel de governança com os indicadores de Licitações e Contratos do Grupamen
 2. Em "Branch", selecione `main` e a pasta `/root`
 3. Salve — o GitHub te dá um link tipo `https://seu-usuario.github.io/nome-do-repositorio/`
 
+## Conectado ao Google Sheets
+
+O painel agora consegue ler os dados direto de uma planilha do Google Sheets:
+
+1. Importe os 4 arquivos da pasta `planilhas-modelo/` como 4 abas de uma planilha do Google Sheets (`Resumo`, `PAC`, `Indicadores`, `Contratos`).
+2. Publique cada aba individualmente: **Arquivo → Compartilhar → Publicar na web**, escolha a aba e o formato **CSV**.
+3. Cole os 4 links gerados dentro de `config.js`, no objeto `SHEET_URLS`.
+4. Suba os arquivos atualizados para o GitHub.
+
+Enquanto `config.js` estiver vazio, o painel continua usando os números fixos de `data.js` — nada quebra.
+
 ## Próximos passos (planejados)
 
-- [ ] Conectar `data.js` a uma planilha do Google Sheets publicada como CSV, para atualização sem precisar editar código
+- [x] Conectar `data.js` a uma planilha do Google Sheets publicada como CSV
 - [ ] Automatizar a atualização via n8n

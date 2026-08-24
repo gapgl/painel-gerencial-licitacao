@@ -154,11 +154,23 @@ function setupFilters() {
 }
 
 /* ---------- Init ---------- */
-document.addEventListener("DOMContentLoaded", () => {
+function renderAll() {
   renderMeta();
   renderKPIs();
   renderPAC();
   renderIndicadores();
-  setupFilters();
   renderContratos();
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+  // 1) Mostra imediatamente com os dados locais (data.js), para a tela
+  //    nunca ficar em branco enquanto busca a planilha.
+  setupFilters();
+  renderAll();
+
+  // 2) Tenta atualizar com os dados do Google Sheets, se configurado.
+  const atualizou = await tryLoadFromSheets();
+  if (atualizou) {
+    renderAll();
+  }
 });

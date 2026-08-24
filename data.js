@@ -12,7 +12,7 @@
    resto do site.
    ============================================================ */
 
-const DASHBOARD_DATA = {
+let DASHBOARD_DATA = {
 
   fonte: "Reunião de Avaliação da Gestão - GAP-GL",
   periodo: "Jan - Jun 2026",
