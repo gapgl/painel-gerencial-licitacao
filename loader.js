@@ -109,6 +109,49 @@ function parseContratos(rows) {
   }));
 }
 
+/* ============================================================
+   BLOCO 2 — Acompanhamento da Seção de Licitações
+   (Controle de Processos do Cap Saulo — dado bruto, linha a linha)
+   ============================================================ */
+
+function parseProcessos(rows) {
+  return rows
+    .filter(r => r.objeto && r.objeto.trim() !== "")
+    .map(r => ({
+      licitacao: r.licitacao || "",
+      modalidade: (r.modalidade || "").trim().toUpperCase(),
+      status: (r.status || "").trim().toUpperCase(),
+      objeto: r.objeto,
+      om: (r.om || "").trim(),
+      responsavel: (r.responsavel || "").trim(),
+      observacoes: r.observacoes || ""
+    }));
+}
+
+function parseAtas(rows) {
+  return rows
+    .filter(r => r.pregao && r.pregao.trim() !== "")
+    .map(r => ({
+      pregao: r.pregao.trim(),
+      objeto: r.objeto,
+      vigencia: r.vigencia // string "dd/mm/aaaa", convertida na hora de exibir
+    }));
+}
+
+function parsePipeline(rows) {
+  return rows
+    .filter(r => r.objeto && r.objeto.trim() !== "")
+    .map(r => ({
+      categoria: r.categoria,
+      objeto: r.objeto,
+      ataVigente: (r.ata_vigente || "").trim().toUpperCase().startsWith("SIM"),
+      vigencia: r.vigencia || "",
+      licitacao: r.licitacao || "",
+      status: (r.status_nova_licitacao || "").trim(),
+      observacao: r.observacao || ""
+    }));
+}
+
 /**
  * Tenta carregar os dados do Google Sheets.
  * Retorna true se conseguiu atualizar DASHBOARD_DATA, false caso
@@ -116,28 +159,48 @@ function parseContratos(rows) {
  */
 async function tryLoadFromSheets() {
   const urls = typeof SHEET_URLS !== "undefined" ? SHEET_URLS : null;
-  if (!urls || !urls.resumo || !urls.pca || !urls.indicadores || !urls.contratos) {
-    console.info("SHEET_URLS não configurado ainda — usando dados locais de data.js.");
-    return false;
+
+  // Bloco 1 + 3 (PCA, Indicadores, Contratos) — como já funcionava
+  const blocoPCAConfigurado = urls && urls.resumo && urls.pca && urls.indicadores && urls.contratos;
+  if (blocoPCAConfigurado) {
+    try {
+      const [resumoRows, pcaRows, indRows, contratosRows] = await Promise.all([
+        fetchCSV(urls.resumo),
+        fetchCSV(urls.pca),
+        fetchCSV(urls.indicadores),
+        fetchCSV(urls.contratos)
+      ]);
+      DASHBOARD_DATA.resumo = parseResumo(resumoRows);
+      DASHBOARD_DATA.pca = parsePca(pcaRows);
+      DASHBOARD_DATA.indicadores = parseIndicadores(indRows);
+      DASHBOARD_DATA.contratos = parseContratos(contratosRows);
+      console.info("Bloco PCA/Contratos atualizado a partir do Google Sheets.");
+    } catch (err) {
+      console.error("Falha ao carregar Bloco PCA/Contratos:", err);
+    }
+  } else {
+    console.info("Bloco PCA/Contratos: SHEET_URLS incompleto — usando dados locais de data.js.");
   }
 
-  try {
-    const [resumoRows, pcaRows, indRows, contratosRows] = await Promise.all([
-      fetchCSV(urls.resumo),
-      fetchCSV(urls.pca),
-      fetchCSV(urls.indicadores),
-      fetchCSV(urls.contratos)
-    ]);
-
-    DASHBOARD_DATA.resumo = parseResumo(resumoRows);
-    DASHBOARD_DATA.pca = parsePca(pcaRows);
-    DASHBOARD_DATA.indicadores = parseIndicadores(indRows);
-    DASHBOARD_DATA.contratos = parseContratos(contratosRows);
-
-    console.info("Dados atualizados a partir do Google Sheets.");
-    return true;
-  } catch (err) {
-    console.error("Não foi possível carregar os dados do Google Sheets:", err);
-    return false;
+  // Bloco 2 (Controle de Processos da Seção) — independente do Bloco 1/3
+  const blocoProcessosConfigurado = urls && urls.processos && urls.atas && urls.pipeline;
+  if (blocoProcessosConfigurado) {
+    try {
+      const [processosRows, atasRows, pipelineRows] = await Promise.all([
+        fetchCSV(urls.processos),
+        fetchCSV(urls.atas),
+        fetchCSV(urls.pipeline)
+      ]);
+      DASHBOARD_DATA.controleProcessos.processos = parseProcessos(processosRows);
+      DASHBOARD_DATA.controleProcessos.atas = parseAtas(atasRows);
+      DASHBOARD_DATA.controleProcessos.pipeline = parsePipeline(pipelineRows);
+      console.info("Bloco Controle de Processos atualizado a partir do Google Sheets.");
+    } catch (err) {
+      console.error("Falha ao carregar Bloco Controle de Processos:", err);
+    }
+  } else {
+    console.info("Bloco Controle de Processos: SHEET_URLS incompleto — usando dados locais de data.js.");
   }
+
+  return blocoPCAConfigurado || blocoProcessosConfigurado;
 }

@@ -35,6 +35,26 @@ realizado: 90
 
 O site sozinho separa o "(dias)" do nome e mostra "90 dias" na tela — você só precisa manter essa regra ao criar um indicador novo.
 
+## Estrutura dos 3 blocos (não misturar!)
+
+Este painel reúne **3 fontes de dados com propósitos diferentes**. Cada uma tem sua cor e sua legenda de fonte na tela — nunca misture números de um bloco com outro em cálculos ou comparações informais:
+
+1. **PCA (Plano de Contratações Anual)** — azul-marinho. Planejamento oficial registrado no sistema de compras do governo pelas Unidades Apoiadas. Muitas licitações aqui nunca chegam a ser iniciadas — é só o registro do planejamento.
+2. **Acompanhamento da Seção de Licitações** — roxo. Controle interno da própria Seção (mantido pelo Cap Saulo), mostrando a execução real e o planejamento próprio da Seção (pipeline de contratações 2026, atas vigentes, ranking de processos).
+3. **Contratos Administrativos Vigentes** — verde. Gestão dos contratos de serviço já firmados e sua vigência.
+
+Se um dia quiserem comparar PCA vs. execução real, isso deve ser uma seção nova, rotulada explicitamente como "comparativo" — nunca substituindo ou se misturando aos números originais de cada bloco.
+
+## Sobre o Bloco 2 (Controle de Processos)
+
+Os dados desse bloco vêm do arquivo **"1 - CONTROLE PROCESSOS.xlsx"**, mantido pelo Cap Saulo numa pasta de rede interna do GAP-GL (não é Google Drive). Para o painel ler isso, é preciso:
+
+1. Copiar (sem alterar a rotina do Cap Saulo) esse arquivo para a pasta do Google Drive já usada pelo painel
+2. Importar as 3 abas relevantes para o Google Sheets: `PROCESSOS`, `ATAS VIGENTES`, e as abas `30`+`39`+`52` combinadas (veja os CSVs modelo em `planilhas-modelo/processos_raw.csv`, `atas_raw.csv` e `pipeline_raw.csv`)
+3. Publicar cada uma como CSV e colar os links em `config.js` (`processos`, `atas`, `pipeline`)
+
+O painel faz toda a contagem, ranking e classificação de risco automaticamente em JavaScript — você não precisa calcular nada na planilha, só manter os dados brutos atualizados.
+
 ## Conectado ao Google Sheets
 
 O painel agora consegue ler os dados direto de uma planilha do Google Sheets:

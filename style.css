@@ -28,6 +28,12 @@
   --crit-fg: #d13c3c;
   --crit-bar: #e34848;
 
+  /* Bloco 2 — Acompanhamento da Seção de Licitações (cor própria, para
+     nunca ser confundido visualmente com o PCA (navy) ou Contratos (verde)) */
+  --secao-500: #6d28d9;
+  --secao-600: #5b21b6;
+  --secao-bg: #f5f0ff;
+
   --radius: 14px;
   --shadow: 0 1px 2px rgba(20, 30, 60, 0.04), 0 8px 24px rgba(20, 30, 60, 0.06);
 }
@@ -364,6 +370,145 @@ footer {
   font-size: 12px;
   color: var(--text-muted);
   padding: 20px;
+}
+
+/* ---------- Divisor de bloco (separa as 3 fontes de dados) ---------- */
+.bloco-divisor {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 44px 0 20px;
+}
+.bloco-divisor .numero {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800;
+  font-size: 13px;
+  color: #fff;
+  flex-shrink: 0;
+}
+.bloco-divisor .textos h2 {
+  margin: 0;
+  font-size: 15px;
+  color: var(--navy-950);
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+.bloco-divisor .textos .fonte {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.bloco-divisor .linha {
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+.bloco-divisor.bloco-pca .numero { background: var(--navy-700); }
+.bloco-divisor.bloco-secao .numero { background: var(--secao-500); }
+.bloco-divisor.bloco-contratos .numero { background: var(--ok-bar); }
+
+/* ---------- Seção 2 (roxo) — cards e listas ---------- */
+.kpi.tema-secao { border-top-color: var(--secao-500); }
+
+.ranking-list { display: flex; flex-direction: column; gap: 10px; }
+.ranking-item {
+  display: grid;
+  grid-template-columns: 26px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+.ranking-item .pos {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: var(--secao-bg);
+  color: var(--secao-600);
+  font-weight: 800;
+  font-size: 12px;
+  display: flex; align-items: center; justify-content: center;
+}
+.ranking-item .barra-track {
+  height: 8px;
+  border-radius: 4px;
+  background: #eee6fb;
+  overflow: hidden;
+}
+.ranking-item .barra-fill {
+  height: 100%;
+  background: var(--secao-500);
+  border-radius: 4px;
+}
+.ranking-item .qtd {
+  font-weight: 700;
+  color: var(--navy-950);
+  min-width: 22px;
+  text-align: right;
+}
+.ranking-nome-linha {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12.5px;
+  margin-bottom: 3px;
+}
+.ranking-nome-linha .nome { color: var(--text-main); }
+
+.status-legend-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px 20px;
+  font-size: 13px;
+}
+.status-legend-grid .item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+}
+.status-legend-grid .dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+
+/* ---------- Pipeline (kanban simples por categoria) ---------- */
+.pipeline-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+.pipeline-col h3 {
+  font-size: 13px;
+  color: var(--secao-600);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin: 0 0 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--secao-bg);
+}
+.pipeline-card {
+  background: var(--secao-bg);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  font-size: 12.5px;
+}
+.pipeline-card .obj { font-weight: 700; color: var(--navy-950); margin-bottom: 6px; }
+.pipeline-card .meta-row { display: flex; justify-content: space-between; color: var(--text-muted); margin-bottom: 4px; }
+.pipeline-card .obs { color: var(--text-muted); margin-top: 6px; font-style: italic; }
+.pipeline-card .tag-ata {
+  display: inline-block;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 999px;
+  margin-bottom: 6px;
+}
+.pipeline-card .tag-ata.sim { background: var(--ok-bg); color: var(--ok-fg); }
+.pipeline-card .tag-ata.nao { background: #eef1f8; color: var(--text-muted); }
+
+@media (max-width: 900px) {
+  .pipeline-grid { grid-template-columns: 1fr; }
+  .status-legend-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 900px) {

@@ -24,6 +24,15 @@
 
   <main>
 
+    <div class="bloco-divisor bloco-pca">
+      <div class="numero">1</div>
+      <div class="textos">
+        <h2>Plano de Contratações Anual (PCA)</h2>
+        <div class="fonte">Fonte: PNCP / Planejamento registrado pelas Unidades Apoiadas</div>
+      </div>
+      <div class="linha"></div>
+    </div>
+
     <section>
       <div class="kpi-grid" id="kpiGrid"></div>
     </section>
@@ -60,6 +69,95 @@
         <div class="ind-grid" id="indGrid"></div>
       </div>
     </section>
+
+    <div class="bloco-divisor bloco-secao">
+      <div class="numero">2</div>
+      <div class="textos">
+        <h2>Acompanhamento da Seção de Licitações</h2>
+        <div class="fonte">Fonte: Controle interno da Seção (execução real e planejamento próprio)</div>
+      </div>
+      <div class="linha"></div>
+    </div>
+
+    <section>
+      <div class="kpi-grid" id="kpiGridSecao"></div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <h2>Panorama de Processos</h2>
+        <span id="panoramaTotal"></span>
+      </div>
+      <div class="grid-2">
+        <div class="panel">
+          <h3 style="margin:0 0 12px;font-size:13px;color:var(--text-muted);text-transform:uppercase;">Por Status</h3>
+          <div class="status-legend-grid" id="statusGrid"></div>
+        </div>
+        <div class="panel donut-wrap">
+          <canvas id="secaoDonut" width="200" height="200"></canvas>
+          <div class="donut-caption">
+            <div class="big" id="secaoDonutBig">0%</div>
+            <div class="small">Processos homologados<br>sobre o total</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="grid-2">
+        <div class="panel">
+          <div class="section-head" style="margin-bottom:14px;">
+            <h2 style="font-size:14px;">Ranking por Responsável</h2>
+          </div>
+          <div class="ranking-list" id="rankingResponsavel"></div>
+        </div>
+        <div class="panel">
+          <div class="section-head" style="margin-bottom:14px;">
+            <h2 style="font-size:14px;">Ranking por OM Atendida</h2>
+          </div>
+          <div class="ranking-list" id="rankingOM"></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <h2>Atas de Registro de Preço Vigentes</h2>
+        <span id="atasCount"></span>
+      </div>
+      <div class="panel">
+        <table class="contratos">
+          <thead>
+            <tr>
+              <th>Pregão</th>
+              <th>Objeto</th>
+              <th>Vigência</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="atasBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <h2>Pipeline de Contratações 2026</h2>
+        <span>Planejamento próprio da Seção</span>
+      </div>
+      <div class="panel">
+        <div class="pipeline-grid" id="pipelineGrid"></div>
+      </div>
+    </section>
+
+    <div class="bloco-divisor bloco-contratos">
+      <div class="numero">3</div>
+      <div class="textos">
+        <h2>Contratos Administrativos Vigentes</h2>
+        <div class="fonte">Fonte: Gestão de contratos administrativos (serviços contratados)</div>
+      </div>
+      <div class="linha"></div>
+    </div>
 
     <section>
       <div class="section-head">

@@ -12,8 +12,19 @@
    ============================================================ */
 
 const SHEET_URLS = {
+  // --- Bloco 1: PCA (Plano de Contratações Anual) ---
   resumo: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRzFqJ721YD8hG32ZlyES8A4Na5bZ3YLmYmMRr5PiCXeMTc5VCKykJh9tCYuMbQ-bwlFkdSlVemaHKy/pub?gid=505338237&single=true&output=csv",
   pca: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRzFqJ721YD8hG32ZlyES8A4Na5bZ3YLmYmMRr5PiCXeMTc5VCKykJh9tCYuMbQ-bwlFkdSlVemaHKy/pub?gid=234112692&single=true&output=csv",
   indicadores: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRzFqJ721YD8hG32ZlyES8A4Na5bZ3YLmYmMRr5PiCXeMTc5VCKykJh9tCYuMbQ-bwlFkdSlVemaHKy/pub?gid=1607426912&single=true&output=csv",
-  contratos: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRzFqJ721YD8hG32ZlyES8A4Na5bZ3YLmYmMRr5PiCXeMTc5VCKykJh9tCYuMbQ-bwlFkdSlVemaHKy/pub?gid=18204474&single=true&output=csv"
+
+  // --- Bloco 3: Contratos Administrativos Vigentes ---
+  contratos: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRzFqJ721YD8hG32ZlyES8A4Na5bZ3YLmYmMRr5PiCXeMTc5VCKykJh9tCYuMbQ-bwlFkdSlVemaHKy/pub?gid=18204474&single=true&output=csv",
+
+  // --- Bloco 2: Acompanhamento da Seção de Licitações (Controle de Processos) ---
+  // Estes 3 links vêm de uma cópia do arquivo "1 - CONTROLE PROCESSOS" do
+  // Cap Saulo (pasta de rede), importada para o Google Sheets. Preencha
+  // depois de publicar cada aba correspondente.
+  processos: "",
+  atas: "",
+  pipeline: ""
 };
