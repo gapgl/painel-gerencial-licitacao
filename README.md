@@ -45,15 +45,23 @@ Este painel reúne **3 fontes de dados com propósitos diferentes**. Cada uma te
 
 Se um dia quiserem comparar PCA vs. execução real, isso deve ser uma seção nova, rotulada explicitamente como "comparativo" — nunca substituindo ou se misturando aos números originais de cada bloco.
 
-## Sobre o Bloco 2 (Controle de Processos)
+## Sobre o Bloco 2 (Controle de Processos) — rotina simplificada
 
-Os dados desse bloco vêm do arquivo **"1 - CONTROLE PROCESSOS.xlsx"**, mantido pelo Cap Saulo numa pasta de rede interna do GAP-GL (não é Google Drive). Para o painel ler isso, é preciso:
+Os dados desse bloco vêm do arquivo **"1 - CONTROLE PROCESSOS.xlsx"**, mantido pelo Cap Saulo numa pasta de rede interna do GAP-GL. O código lê as colunas **exatamente como estão no arquivo original** — nada de renomear cabeçalho, nada de reformatar.
 
-1. Copiar (sem alterar a rotina do Cap Saulo) esse arquivo para a pasta do Google Drive já usada pelo painel
-2. Importar as 3 abas relevantes para o Google Sheets: `PROCESSOS`, `ATAS VIGENTES`, e as abas `30`+`39`+`52` combinadas (veja os CSVs modelo em `planilhas-modelo/processos_raw.csv`, `atas_raw.csv` e `pipeline_raw.csv`)
-3. Publicar cada uma como CSV e colar os links em `config.js` (`processos`, `atas`, `pipeline`)
+**Configuração (faz uma vez só):**
 
-O painel faz toda a contagem, ranking e classificação de risco automaticamente em JavaScript — você não precisa calcular nada na planilha, só manter os dados brutos atualizados.
+1. Copie o arquivo do Cap Saulo para a pasta do Google Drive já usada pelo painel
+2. Abra/crie uma planilha do Google Sheets e importe as 5 abas, **sem alterar nenhuma coluna**:
+   - `PROCESSOS` → importe direto
+   - `ATAS VIGENTES` → importe direto
+   - `30`, `39`, `52` → importe direto, mas **apague a primeira linha** de cada uma (é só o título mesclado tipo "PROCESSOS DE AQ DE MATERIAIS CONSUMO PARA 2026" — a segunda linha já é o cabeçalho de verdade)
+3. Publique cada uma das 5 abas como CSV (Arquivo → Compartilhar → Publicar na web)
+4. Cole os 5 links em `config.js`: `processos`, `atas`, `pipelineConsumo` (aba 30), `pipelineServicos` (aba 39), `pipelinePermanentes` (aba 52)
+
+**Rotina de atualização (o que você faz toda vez que o Cap Saulo atualizar o arquivo dele):**
+
+Copie o arquivo atualizado pra pasta do Drive e **substitua os dados nas mesmas 5 abas** (copiar e colar os valores de novo, ou reimportar com "Substituir planilha atual"). Como as abas continuam sendo as mesmas, os links publicados continuam funcionando sem precisar mexer no `config.js` de novo. O painel recalcula tudo sozinho (contagem por status, ranking, risco de vencimento) — você não faz nenhuma conta.
 
 ## Conectado ao Google Sheets
 

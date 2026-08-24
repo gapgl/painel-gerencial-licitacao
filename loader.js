@@ -115,40 +115,50 @@ function parseContratos(rows) {
    ============================================================ */
 
 function parseProcessos(rows) {
+  // Lê as colunas EXATAMENTE como aparecem na planilha original do Cap Saulo
+  // (aba "PROCESSOS"): PAG, LICITAÇÃO, MODALIDADE, STATUS, OBJETO RESUMIDO,
+  // OM, RESPONSÁVEL, OBSERVAÇÕES. Não é preciso renomear nada na planilha.
   return rows
-    .filter(r => r.objeto && r.objeto.trim() !== "")
+    .filter(r => r["OBJETO RESUMIDO"] && r["OBJETO RESUMIDO"].trim() !== "")
     .map(r => ({
-      licitacao: r.licitacao || "",
-      modalidade: (r.modalidade || "").trim().toUpperCase(),
-      status: (r.status || "").trim().toUpperCase(),
-      objeto: r.objeto,
-      om: (r.om || "").trim(),
-      responsavel: (r.responsavel || "").trim(),
-      observacoes: r.observacoes || ""
+      licitacao: r["LICITAÇÃO"] || "",
+      modalidade: (r["MODALIDADE"] || "").trim().toUpperCase(),
+      status: (r["STATUS"] || "").trim().toUpperCase(),
+      objeto: r["OBJETO RESUMIDO"],
+      om: (r["OM"] || "").trim(),
+      responsavel: (r["RESPONSÁVEL"] || "").trim(),
+      observacoes: r["OBSERVAÇÕES"] || ""
     }));
 }
 
 function parseAtas(rows) {
+  // Lê a aba "ATAS VIGENTES" original: PREGÃO, OBJETO, VIGÊNCIA.
   return rows
-    .filter(r => r.pregao && r.pregao.trim() !== "")
+    .filter(r => r["PREGÃO"] && r["PREGÃO"].trim() !== "")
     .map(r => ({
-      pregao: r.pregao.trim(),
-      objeto: r.objeto,
-      vigencia: r.vigencia // string "dd/mm/aaaa", convertida na hora de exibir
+      pregao: r["PREGÃO"].trim(),
+      objeto: r["OBJETO"],
+      vigencia: r["VIGÊNCIA"] // string "dd/mm/aaaa"
     }));
 }
 
-function parsePipeline(rows) {
+/**
+ * Lê uma das abas de planejamento (30, 39 ou 52) exatamente como estão:
+ * OBJETO, ATA/CONTRATO VIGENTE?, VIGENCIA, LICITAÇÃO, STATUS NOVA LICITAÇÃO,
+ * OBSERVAÇÃO (esta última só existe nas abas 39 e 52, não na 30 — tudo bem).
+ * A categoria é definida por FORA (qual link foi usado), não por uma coluna.
+ */
+function parsePipelineAba(rows, categoria) {
   return rows
-    .filter(r => r.objeto && r.objeto.trim() !== "")
+    .filter(r => r["OBJETO"] && r["OBJETO"].trim() !== "")
     .map(r => ({
-      categoria: r.categoria,
-      objeto: r.objeto,
-      ataVigente: (r.ata_vigente || "").trim().toUpperCase().startsWith("SIM"),
-      vigencia: r.vigencia || "",
-      licitacao: r.licitacao || "",
-      status: (r.status_nova_licitacao || "").trim(),
-      observacao: r.observacao || ""
+      categoria,
+      objeto: r["OBJETO"],
+      ataVigente: (r["ATA/CONTRATO VIGENTE?"] || "").trim().toUpperCase().startsWith("SIM"),
+      vigencia: r["VIGENCIA"] || r["VIGÊNCIA"] || "",
+      licitacao: r["LICITAÇÃO"] || "",
+      status: (r["STATUS NOVA LICITAÇÃO"] || "").trim(),
+      observacao: r["OBSERVAÇÃO"] || ""
     }));
 }
 
@@ -183,17 +193,25 @@ async function tryLoadFromSheets() {
   }
 
   // Bloco 2 (Controle de Processos da Seção) — independente do Bloco 1/3
-  const blocoProcessosConfigurado = urls && urls.processos && urls.atas && urls.pipeline;
+  const blocoProcessosConfigurado = urls && urls.processos && urls.atas &&
+    urls.pipelineConsumo && urls.pipelineServicos && urls.pipelinePermanentes;
+
   if (blocoProcessosConfigurado) {
     try {
-      const [processosRows, atasRows, pipelineRows] = await Promise.all([
+      const [processosRows, atasRows, consumoRows, servicosRows, permanentesRows] = await Promise.all([
         fetchCSV(urls.processos),
         fetchCSV(urls.atas),
-        fetchCSV(urls.pipeline)
+        fetchCSV(urls.pipelineConsumo),
+        fetchCSV(urls.pipelineServicos),
+        fetchCSV(urls.pipelinePermanentes)
       ]);
       DASHBOARD_DATA.controleProcessos.processos = parseProcessos(processosRows);
       DASHBOARD_DATA.controleProcessos.atas = parseAtas(atasRows);
-      DASHBOARD_DATA.controleProcessos.pipeline = parsePipeline(pipelineRows);
+      DASHBOARD_DATA.controleProcessos.pipeline = [
+        ...parsePipelineAba(consumoRows, "Materiais de Consumo"),
+        ...parsePipelineAba(servicosRows, "Contratação de Serviços"),
+        ...parsePipelineAba(permanentesRows, "Materiais Permanentes")
+      ];
       console.info("Bloco Controle de Processos atualizado a partir do Google Sheets.");
     } catch (err) {
       console.error("Falha ao carregar Bloco Controle de Processos:", err);

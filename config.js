@@ -21,10 +21,13 @@ const SHEET_URLS = {
   contratos: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRzFqJ721YD8hG32ZlyES8A4Na5bZ3YLmYmMRr5PiCXeMTc5VCKykJh9tCYuMbQ-bwlFkdSlVemaHKy/pub?gid=18204474&single=true&output=csv",
 
   // --- Bloco 2: Acompanhamento da Seção de Licitações (Controle de Processos) ---
-  // Estes 3 links vêm de uma cópia do arquivo "1 - CONTROLE PROCESSOS" do
-  // Cap Saulo (pasta de rede), importada para o Google Sheets. Preencha
-  // depois de publicar cada aba correspondente.
+  // Estes 5 links vêm de uma cópia do arquivo "1 - CONTROLE PROCESSOS" do
+  // Cap Saulo (pasta de rede), importado SEM alterações para o Google Sheets
+  // (mesmas colunas, mesmos nomes). Publique as abas: PROCESSOS, ATAS VIGENTES,
+  // 30 (Materiais de Consumo), 39 (Serviços) e 52 (Materiais Permanentes).
   processos: "",
   atas: "",
-  pipeline: ""
+  pipelineConsumo: "",
+  pipelineServicos: "",
+  pipelinePermanentes: ""
 };
