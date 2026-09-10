@@ -157,9 +157,10 @@ const STATUS_CANONICO = [
   { chave: "homologado",   rotulo: "Homologado",          cor: "#22c55e", match: s => s.includes("HOMOLOGADO") },
   { chave: "andamento",    rotulo: "Licitação em Andamento", cor: "#3b82f6",  match: s => s.includes("LICITAÇÃO EM ANDAMENTO") },
   { chave: "adequacao",    rotulo: "Adequação Pós CJU",    cor: "#f5a623",   match: s => s.includes("ADEQUAÇÃO") },
+  { chave: "envio_cju",    rotulo: "Envio CJU",            cor: "#0ea5e9",   match: s => s.includes("ENVIO CJU") },
   { chave: "fase_interna", rotulo: "Fase Interna",         cor: "#6d28d9",   match: s => s.includes("FASE INTERNA") },
   { chave: "publicado",    rotulo: "Publicado",            cor: "#14b8a6",   match: s => s.includes("PUBLICADO") },
-  { chave: "sem_sucesso",  rotulo: "Sem Sucesso / Suspenso", cor: "#e34848", match: () => true } // fallback
+  { chave: "sem_sucesso",  rotulo: "Sem Sucesso / Suspenso", cor: "#e34848", match: () => true } // fallback: Deserto, Fracassado, Revogado, Suspenso
 ];
 
 function classificarStatus(statusBruto) {
@@ -184,10 +185,10 @@ function renderSecaoKPIs(processosFiltrados) {
   const atas = DASHBOARD_DATA.controleProcessos.atas;
 
   const total = processos.length;
-  const contagemStatus = { homologado: 0, andamento: 0, adequacao: 0, fase_interna: 0, publicado: 0, sem_sucesso: 0 };
+  const contagemStatus = { homologado: 0, andamento: 0, adequacao: 0, envio_cju: 0, fase_interna: 0, publicado: 0, sem_sucesso: 0 };
   processos.forEach(p => { contagemStatus[classificarStatus(p.status).chave]++; });
 
-  const emTramitacao = contagemStatus.andamento + contagemStatus.adequacao + contagemStatus.fase_interna + contagemStatus.publicado;
+  const emTramitacao = contagemStatus.andamento + contagemStatus.adequacao + contagemStatus.envio_cju + contagemStatus.fase_interna + contagemStatus.publicado;
   const pctHomologado = total ? Math.round((contagemStatus.homologado / total) * 100) : 0;
 
   const atasVencendoLogo = atas.filter(a => classificarRiscoData(a.vigencia) === "critico").length;
