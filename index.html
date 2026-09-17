@@ -10,6 +10,7 @@
 <link rel="icon" type="image/png" sizes="48x48" href="assets/favicon-48.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <link rel="stylesheet" href="style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -367,25 +368,117 @@
 
     <section id="secao-atas">
       <div class="section-head">
-        <h2>2. Atas de Registro de Preço Vigentes</h2>
-        <span id="atasCount"></span>
+        <h2>2. Central de Gestão de Atas de Registro de Preços</h2>
+        <span id="atasResumoTopo"></span>
       </div>
-      <div class="panel">
-        <table class="contratos">
-          <thead>
-            <tr>
-              <th>Pregão</th>
-              <th>Objeto</th>
-              <th>Vigência</th>
-              <th>Dias Restantes</th>
-              <th>Status</th>
-              <th>Observações</th>
-            </tr>
-          </thead>
-          <tbody id="atasBody"></tbody>
-        </table>
+      <p class="atas-subtitulo">Consulte, acompanhe vigências e identifique Atas que exigem atenção.</p>
+
+      <!-- KPIs -->
+      <div class="kpi-grid atas-kpi-grid" id="atasKpiGrid"></div>
+
+      <!-- Alerta inteligente -->
+      <div id="atasAlerta" class="atas-alerta"></div>
+
+      <!-- Barra de busca e filtros -->
+      <div class="panel atas-toolbar">
+        <div class="atas-busca">
+          <span class="atas-busca-icone">&#128269;</span>
+          <input type="text" id="atasBusca" placeholder="Pesquisar pregão, ano, objeto ou observação...">
+        </div>
+
+        <div class="atas-filtros-linha">
+          <select id="atasFiltroStatus">
+            <option value="todos">Status: Todos</option>
+            <option value="VIGENTE">Vigente</option>
+            <option value="PRÓXIMA DO VENCIMENTO">Próxima do vencimento</option>
+            <option value="VENCIDA">Vencida</option>
+            <option value="RENOVADA">Renovada</option>
+          </select>
+          <select id="atasFiltroAno"></select>
+          <button id="atasToggleAvancado" class="atas-btn-secundario">Filtros avançados</button>
+          <button id="atasOrdenarUrgencia" class="atas-btn-secundario">Ordenar por urgência</button>
+          <button id="atasLimparFiltros" class="atas-btn-secundario">Limpar filtros</button>
+          <div class="atas-toolbar-espaco"></div>
+          <div class="atas-view-toggle">
+            <button id="atasViewTabela" class="active">Tabela</button>
+            <button id="atasViewCronograma">Cronograma</button>
+          </div>
+          <div class="atas-export-group">
+            <button id="atasExportCsv" class="atas-btn-secundario">Exportar CSV</button>
+            <button id="atasExportExcel" class="atas-btn-secundario">Exportar Excel</button>
+            <button id="atasExportPdf" class="atas-btn-secundario">Exportar PDF</button>
+          </div>
+        </div>
+
+        <div class="atas-filtros-avancados hidden" id="atasFiltrosAvancados">
+          <select id="atasFiltroPrazo">
+            <option value="todos">Prazo: Todos</option>
+            <option value="7">Vencendo em até 7 dias</option>
+            <option value="15">Vencendo em até 15 dias</option>
+            <option value="30">Vencendo em até 30 dias</option>
+            <option value="60">Vencendo em até 60 dias</option>
+            <option value="mais60">Mais de 60 dias</option>
+            <option value="vencidas">Já vencidas</option>
+          </select>
+        </div>
       </div>
+
+      <!-- Resultado / paginação superior -->
+      <div class="atas-resultado-linha">
+        <span id="atasResultadoTexto"></span>
+        <select id="atasPorPagina">
+          <option value="10">10 por página</option>
+          <option value="25" selected>25 por página</option>
+          <option value="50">50 por página</option>
+          <option value="100">100 por página</option>
+        </select>
+      </div>
+
+      <!-- Tabela -->
+      <div class="panel" id="atasPainelTabela">
+        <div class="tabela-scroll atas-tabela-scroll">
+          <table class="contratos atas-tabela">
+            <thead>
+              <tr>
+                <th data-campo="pregao" class="ordenavel">Pregão/Ano</th>
+                <th data-campo="objeto" class="ordenavel atas-col-objeto">Objeto</th>
+                <th data-campo="inicioVigencia" class="ordenavel">Início Vigência</th>
+                <th data-campo="fimVigencia" class="ordenavel">Fim Vigência</th>
+                <th data-campo="diasReais" class="ordenavel atas-col-dias">Dias Restantes</th>
+                <th data-campo="statusPrincipal" class="ordenavel">Status</th>
+                <th>Ações</th>
+                <th data-campo="novaVigencia" class="ordenavel">Nova Vigência</th>
+                <th>OBS</th>
+              </tr>
+            </thead>
+            <tbody id="atasBody"></tbody>
+          </table>
+        </div>
+        <div id="atasVazio" class="atas-vazio hidden">
+          <strong>Nenhuma Ata encontrada</strong>
+          <p>Não encontramos registros para os filtros selecionados.</p>
+          <button id="atasLimparFiltros2" class="atas-btn-secundario">Limpar filtros</button>
+        </div>
+      </div>
+
+      <!-- Cronograma (visão alternativa) -->
+      <div class="panel hidden" id="atasPainelCronograma">
+        <div id="atasCronograma"></div>
+      </div>
+
+      <!-- Paginação -->
+      <div class="atas-paginacao" id="atasPaginacao"></div>
     </section>
+
+    <!-- Modal de detalhes da Ata -->
+    <div id="atasModalBackdrop" class="sidebar-backdrop hidden"></div>
+    <div id="atasModal" class="atas-modal hidden">
+      <div class="atas-modal-head">
+        <h3 id="atasModalTitulo">Detalhes da Ata</h3>
+        <button id="atasModalFechar" class="sidebar-close">&#10005;</button>
+      </div>
+      <div class="atas-modal-body" id="atasModalCorpo"></div>
+    </div>
 
     <section id="secao-planejamento" class="hidden">
       <!-- Oculto temporariamente. Para reativar: apague class="hidden" aqui

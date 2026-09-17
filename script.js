@@ -191,7 +191,7 @@ function renderSecaoKPIs(processosFiltrados) {
   const emTramitacao = contagemStatus.andamento + contagemStatus.adequacao + contagemStatus.envio_cju + contagemStatus.fase_interna + contagemStatus.publicado;
   const pctHomologado = total ? Math.round((contagemStatus.homologado / total) * 100) : 0;
 
-  const atasVencendoLogo = atas.filter(a => a.status === "A VENCER").length;
+  const atasVencendoLogo = atas.map(computarAta).filter(a => a.diasReais !== null && a.diasReais >= 0 && a.diasReais <= 90).length;
 
   const el = document.getElementById("kpiGridSecao");
   el.innerHTML = `
@@ -263,42 +263,551 @@ function renderRankings(processosFiltrados) {
   renderRankingLista("rankingOM", contarPor(processos, "om", 8));
 }
 
-/** Classe visual (borda + cor da pílula) para cada status que a própria planilha calcula. */
-const STATUS_ATA = {
-  "VIGENTE":    { pill: "adequado", linha: "planejamento" },
-  "A VENCER":   { pill: "atencao",  linha: "atencao" },
-  "FINALIZADO": { pill: "critico",  linha: "critico" }
+/* ============================================================
+   CENTRAL DE GESTÃO DE ATAS DE REGISTRO DE PREÇOS
+   ============================================================ */
+
+/** Converte "dd/mm/aaaa" em Date (meia-noite local). Retorna null se inválido. */
+function parseDataBR(str) {
+  const s = (str || "").trim();
+  const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!m) return null;
+  const [, d, mes, ano] = m;
+  return new Date(Number(ano), Number(mes) - 1, Number(d));
+}
+
+/** Dias entre hoje e uma data (positivo = futuro, negativo = passado). */
+function diasAteHoje(data) {
+  if (!data) return null;
+  const hoje = new Date();
+  const hojeSemHora = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+  return Math.round((data - hojeSemHora) / 86400000);
+}
+
+/**
+ * Enriquece uma ata bruta com os campos calculados pelo painel:
+ * - vigenciaEfetiva: a Nova Vigência (se renovada) ou a Fim Vigência original
+ * - diasReais: dias restantes de verdade (pode ser negativo), calculado a
+ *   partir da data — não depende do texto pré-calculado da planilha
+ * - statusPrincipal: VIGENTE | PRÓXIMA DO VENCIMENTO | VENCIDA | RENOVADA
+ * - severidade: normal | moderada | atencao | alerta | critico | vencida
+ *   (usada só pra dar destaque visual ao número de dias, nunca sozinha —
+ *   sempre acompanhada de texto)
+ */
+function computarAta(a) {
+  const renovada = (a.renovado || "").trim().toUpperCase() === "SIM";
+  const vigenciaEfetivaStr = (renovada && a.novaVigencia) ? a.novaVigencia : a.fimVigencia;
+  const dataEfetiva = parseDataBR(vigenciaEfetivaStr);
+  const diasReais = dataEfetiva ? diasAteHoje(dataEfetiva) : null;
+
+  let statusPrincipal;
+  if (diasReais === null) statusPrincipal = "VIGENTE";
+  else if (diasReais < 0) statusPrincipal = "VENCIDA";
+  else if (renovada) statusPrincipal = "RENOVADA";
+  else if (diasReais <= 30) statusPrincipal = "PRÓXIMA DO VENCIMENTO";
+  else statusPrincipal = "VIGENTE";
+
+  let severidade;
+  if (diasReais === null) severidade = "normal";
+  else if (diasReais < 0) severidade = "vencida";
+  else if (diasReais === 0) severidade = "critico";
+  else if (diasReais <= 7) severidade = "critico";
+  else if (diasReais <= 15) severidade = "alerta";
+  else if (diasReais <= 30) severidade = "atencao";
+  else if (diasReais <= 60) severidade = "moderada";
+  else severidade = "normal";
+
+  return { ...a, renovada, vigenciaEfetiva: vigenciaEfetivaStr, diasReais, statusPrincipal, severidade };
+}
+
+/** Texto amigável pros dias restantes ("Vence hoje", "Vencida há 18 dias"...). */
+function textoDias(diasReais) {
+  if (diasReais === null) return "-";
+  if (diasReais === 0) return "Vence hoje";
+  if (diasReais < 0) return `Vencida há ${Math.abs(diasReais)} dia${Math.abs(diasReais) === 1 ? "" : "s"}`;
+  return `${diasReais} dia${diasReais === 1 ? "" : "s"}`;
+}
+
+const SEVERIDADE_ICONE = {
+  normal: "●", moderada: "●", atencao: "▲", alerta: "▲", critico: "⚠", vencida: "⛔"
 };
 
-function renderAtas() {
-  const atas = DASHBOARD_DATA.controleProcessos.atas;
+const STATUS_BADGE_CLASSE = {
+  "VIGENTE": "st-vigente",
+  "PRÓXIMA DO VENCIMENTO": "st-proxima",
+  "VENCIDA": "st-vencida",
+  "RENOVADA": "st-renovada"
+};
 
-  // Ordena pelas que vencem mais cedo primeiro (Dias Restantes menor primeiro;
-  // sem número reconhecível vai pro final da lista).
-  const ordenadas = [...atas].sort((a, b) => {
-    const da = parseInt(a.diasRestantes, 10);
-    const db = parseInt(b.diasRestantes, 10);
-    return (isNaN(da) ? Infinity : da) - (isNaN(db) ? Infinity : db);
+/* ---------- Estado da Central de Atas ---------- */
+let atasEstado = {
+  busca: "",
+  status: "todos",
+  ano: "todos",
+  prazo: "todos",
+  ordenacao: { campo: "diasReais", direcao: "asc" },
+  pagina: 1,
+  porPagina: 25,
+  view: "tabela",
+  kpiAtivo: null // qual KPI está "clicado" (visual), null = nenhum
+};
+
+/** Lista de atas já enriquecida com os campos calculados (recalculada a cada render). */
+function getAtasEnriquecidas() {
+  return DASHBOARD_DATA.controleProcessos.atas.map(computarAta);
+}
+
+function getAnoDoPregao(pregao) {
+  const m = (pregao || "").match(/\/(\d{4})$/);
+  return m ? m[1] : null;
+}
+
+function getAtasFiltradas() {
+  const todas = getAtasEnriquecidas();
+  const busca = atasEstado.busca.trim().toLowerCase();
+
+  return todas.filter(a => {
+    const statusOk = atasEstado.status === "todos" || a.statusPrincipal === atasEstado.status;
+    const anoOk = atasEstado.ano === "todos" || getAnoDoPregao(a.pregao) === atasEstado.ano;
+
+    let prazoOk = true;
+    if (atasEstado.prazo !== "todos" && a.diasReais !== null) {
+      if (atasEstado.prazo === "vencidas") prazoOk = a.diasReais < 0;
+      else if (atasEstado.prazo === "mais60") prazoOk = a.diasReais > 60;
+      else prazoOk = a.diasReais >= 0 && a.diasReais <= Number(atasEstado.prazo);
+    } else if (atasEstado.prazo !== "todos" && a.diasReais === null) {
+      prazoOk = false;
+    }
+
+    const buscaOk = !busca || `${a.pregao} ${a.objeto} ${a.obs}`.toLowerCase().includes(busca);
+
+    return statusOk && anoOk && prazoOk && buscaOk;
   });
+}
 
-  document.getElementById("atasCount").textContent = `${atas.length} atas cadastradas`;
-  document.getElementById("atasBody").innerHTML = ordenadas.map(a => {
-    const cfg = STATUS_ATA[a.status] || { pill: "adequado", linha: "planejamento" };
-    // Se já foi renovada (coluna "-"=SIM) e existe Nova Vigência, essa é a
-    // data que importa mostrar; senão, mostra a Fim Vigência original.
-    const vigenciaEfetiva = (a.renovado === "SIM" && a.novaVigencia) ? a.novaVigencia : a.fimVigencia;
+function getAtasOrdenadas(lista) {
+  const { campo, direcao } = atasEstado.ordenacao;
+  const mult = direcao === "asc" ? 1 : -1;
+
+  return [...lista].sort((a, b) => {
+    let va = a[campo], vb = b[campo];
+
+    if (campo === "diasReais") {
+      va = va === null ? Infinity : va;
+      vb = vb === null ? Infinity : vb;
+      return (va - vb) * mult;
+    }
+    if (campo === "inicioVigencia" || campo === "fimVigencia" || campo === "novaVigencia") {
+      const da = parseDataBR(va) || new Date(0);
+      const db = parseDataBR(vb) || new Date(0);
+      return (da - db) * mult;
+    }
+    // texto (pregao, objeto, statusPrincipal)
+    return String(va || "").localeCompare(String(vb || ""), "pt-BR") * mult;
+  });
+}
+
+/** Popula o <select> de Ano com os anos realmente presentes nos pregões. */
+function popularFiltroAnoAtas() {
+  const todas = getAtasEnriquecidas();
+  const anos = [...new Set(todas.map(a => getAnoDoPregao(a.pregao)).filter(Boolean))].sort((a, b) => b - a);
+  const sel = document.getElementById("atasFiltroAno");
+  sel.innerHTML = `<option value="todos">Ano: Todos</option>` + anos.map(a => `<option value="${a}">${a}</option>`).join("");
+  sel.value = atasEstado.ano;
+}
+
+/** KPIs — SEMPRE calculados sobre o conjunto já filtrado (resumo dinâmico). */
+function renderAtasKPIs(lista) {
+  const total = lista.length;
+  const vigentes = lista.filter(a => a.statusPrincipal === "VIGENTE").length;
+  const renovadas = lista.filter(a => a.renovada).length;
+  const atencao30 = lista.filter(a => a.diasReais !== null && a.diasReais >= 0 && a.diasReais <= 30).length;
+  const urgentes7 = lista.filter(a => a.diasReais !== null && a.diasReais >= 0 && a.diasReais <= 7).length;
+  const vencidas = lista.filter(a => a.diasReais !== null && a.diasReais < 0).length;
+
+  const cards = [
+    { chave: "total", label: "Total", valor: total, sub: "Atas cadastradas", tema: "tema-secao" },
+    { chave: "vigentes", label: "Vigentes", valor: vigentes, sub: "Atas em vigor", tema: "status-adequado" },
+    { chave: "renovadas", label: "Renovadas", valor: renovadas, sub: "Já renovadas", tema: "tema-secao" },
+    { chave: "atencao", label: "Atenção", valor: atencao30, sub: "Vencem em até 30 dias", tema: "status-atencao" },
+    { chave: "urgentes", label: "Urgentes", valor: urgentes7, sub: "Vencem em até 7 dias", tema: "status-critico" },
+    { chave: "vencidas", label: "Vencidas", valor: vencidas, sub: "Necessitam providência", tema: "status-critico" }
+  ];
+
+  document.getElementById("atasKpiGrid").innerHTML = cards.map(c => `
+    <div class="kpi ${c.tema} ${atasEstado.kpiAtivo === c.chave ? "ativo" : ""}" data-kpi="${c.chave}">
+      <div class="label">${c.label}</div>
+      <div class="value">${c.valor}</div>
+      <div class="sub">${c.sub}</div>
+    </div>
+  `).join("");
+}
+
+/** Aplica o filtro correspondente ao clicar num card de KPI. */
+function aplicarFiltroKpiAtas(chave) {
+  atasEstado.kpiAtivo = atasEstado.kpiAtivo === chave ? null : chave;
+  const ativo = atasEstado.kpiAtivo;
+
+  // Reseta pro estado neutro antes de aplicar o novo filtro
+  atasEstado.status = "todos";
+  atasEstado.prazo = "todos";
+
+  if (ativo === "vigentes") atasEstado.status = "VIGENTE";
+  else if (ativo === "renovadas") atasEstado.status = "RENOVADA";
+  else if (ativo === "atencao") atasEstado.prazo = "30";
+  else if (ativo === "urgentes") atasEstado.prazo = "7";
+  else if (ativo === "vencidas") atasEstado.prazo = "vencidas";
+  // "total" ou clique de novo no mesmo card = limpa (ativo já foi setado null acima)
+
+  atasEstado.pagina = 1;
+  sincronizarControlesAtas();
+  renderAtasCompleto();
+}
+
+/** Faixa de alerta inteligente, calculada sobre TODAS as atas (não só o filtro atual). */
+function renderAtasAlerta() {
+  const todas = getAtasEnriquecidas();
+  const urgentes7 = todas.filter(a => a.diasReais !== null && a.diasReais >= 0 && a.diasReais <= 7).length;
+  const atencao30 = todas.filter(a => a.diasReais !== null && a.diasReais >= 0 && a.diasReais <= 30).length;
+  const vencidas = todas.filter(a => a.diasReais !== null && a.diasReais < 0).length;
+
+  const el = document.getElementById("atasAlerta");
+
+  if (vencidas > 0) {
+    el.className = "atas-alerta nivel-critico";
+    el.innerHTML = `<span class="atas-alerta-texto">⛔ <strong>${vencidas} Ata${vencidas === 1 ? "" : "s"}</strong> já ${vencidas === 1 ? "está" : "estão"} vencida${vencidas === 1 ? "" : "s"} e precisa${vencidas === 1 ? "" : "m"} de providência.</span><button data-ver="vencidas">Ver Atas</button>`;
+  } else if (urgentes7 > 0) {
+    el.className = "atas-alerta nivel-critico";
+    el.innerHTML = `<span class="atas-alerta-texto">⚠ <strong>${urgentes7} Ata${urgentes7 === 1 ? "" : "s"}</strong> vence${urgentes7 === 1 ? "" : "m"} nos próximos 7 dias.</span><button data-ver="urgentes">Ver Atas</button>`;
+  } else if (atencao30 > 0) {
+    el.className = "atas-alerta nivel-atencao";
+    el.innerHTML = `<span class="atas-alerta-texto">⚠ <strong>ATENÇÃO:</strong> ${atencao30} Ata${atencao30 === 1 ? "" : "s"} possue${atencao30 === 1 ? "" : "m"} término de vigência nos próximos 30 dias.</span><button data-ver="atencao">Ver Atas</button>`;
+  } else {
+    el.className = "atas-alerta nivel-ok";
+    el.innerHTML = `<span class="atas-alerta-texto">✅ Tudo em dia. Nenhuma Ata exige atenção imediata.</span>`;
+  }
+}
+
+/** Sincroniza os controles visuais (selects) com o estado atual. */
+function sincronizarControlesAtas() {
+  document.getElementById("atasFiltroStatus").value = atasEstado.status;
+  document.getElementById("atasFiltroAno").value = atasEstado.ano;
+  document.getElementById("atasFiltroPrazo").value = atasEstado.prazo;
+  document.getElementById("atasBusca").value = atasEstado.busca;
+}
+
+function renderAtasTabela(listaOrdenada) {
+  const total = listaOrdenada.length;
+  const porPagina = atasEstado.porPagina;
+  const totalPaginas = Math.max(1, Math.ceil(total / porPagina));
+  if (atasEstado.pagina > totalPaginas) atasEstado.pagina = totalPaginas;
+  const inicio = (atasEstado.pagina - 1) * porPagina;
+  const pagina = listaOrdenada.slice(inicio, inicio + porPagina);
+
+  document.getElementById("atasVazio").classList.toggle("hidden", total > 0);
+  document.getElementById("atasPainelTabela").querySelector("table").style.display = total > 0 ? "" : "none";
+
+  document.getElementById("atasBody").innerHTML = pagina.map(a => {
+    const badgeClasse = STATUS_BADGE_CLASSE[a.statusPrincipal] || "st-vigente";
+    const icone = SEVERIDADE_ICONE[a.severidade] || "●";
+    const prorrogada = a.renovada && a.novaVigencia
+      ? `<span class="atas-tag-prorrogada">PRORROGADA</span>` : "";
 
     return `
-      <tr class="risk-row-${cfg.linha}">
-        <td class="nup">${a.pregao}</td>
-        <td>${a.objeto}</td>
-        <td class="venc">${vigenciaEfetiva || "-"}</td>
-        <td style="text-align:right;">${a.diasRestantes !== "" ? a.diasRestantes : "-"}</td>
-        <td><span class="pill ${cfg.pill}">${a.status || "-"}</span></td>
-        <td class="prov">${a.obs || ""}</td>
+      <tr>
+        <td>
+          <button class="atas-pregao-link" data-abrir-modal="${a.pregao}">${a.pregao}</button>
+        </td>
+        <td>
+          <span class="atas-objeto-texto" title="${(a.objeto || "").replace(/"/g, "&quot;")}" data-abrir-modal="${a.pregao}">${a.objeto || "-"}</span>
+        </td>
+        <td class="venc">${a.inicioVigencia || "-"}</td>
+        <td class="venc">${a.fimVigencia || "-"}</td>
+        <td><span class="atas-dias sev-${a.severidade}">${icone} ${textoDias(a.diasReais)}</span></td>
+        <td><span class="badge-status ${badgeClasse}">${a.statusPrincipal}</span></td>
+        <td><button class="atas-acoes-btn" data-abrir-modal="${a.pregao}" title="Ver detalhes">&#8942;</button></td>
+        <td>${a.novaVigencia || "-"}${prorrogada}</td>
+        <td><span class="atas-obs-texto" title="${(a.obs || "").replace(/"/g, "&quot;")}" data-abrir-modal="${a.pregao}">${a.obs || "-"}</span></td>
       </tr>
     `;
   }).join("");
+
+  document.getElementById("atasResultadoTexto").textContent = total > 0
+    ? `Exibindo ${inicio + 1}–${Math.min(inicio + porPagina, total)} de ${total} Atas`
+    : "0 Atas encontradas";
+  document.getElementById("atasResumoTopo").textContent = `${total} de ${getAtasEnriquecidas().length} atas`;
+
+  renderAtasPaginacao(total, totalPaginas);
+}
+
+function renderAtasPaginacao(total, totalPaginas) {
+  const el = document.getElementById("atasPaginacao");
+  if (total === 0 || totalPaginas <= 1) { el.innerHTML = ""; return; }
+
+  const pag = atasEstado.pagina;
+  let botoes = `<button data-pagina="${pag - 1}" ${pag === 1 ? "disabled" : ""}>&#8249;</button>`;
+  const janela = 2;
+  for (let p = 1; p <= totalPaginas; p++) {
+    if (p === 1 || p === totalPaginas || (p >= pag - janela && p <= pag + janela)) {
+      botoes += `<button data-pagina="${p}" class="${p === pag ? "ativo" : ""}">${p}</button>`;
+    } else if (p === pag - janela - 1 || p === pag + janela + 1) {
+      botoes += `<span style="padding:0 4px;color:var(--text-muted);">…</span>`;
+    }
+  }
+  botoes += `<button data-pagina="${pag + 1}" ${pag === totalPaginas ? "disabled" : ""}>&#8250;</button>`;
+  el.innerHTML = botoes;
+}
+
+/* ---------- Cronograma (visão alternativa) ---------- */
+function renderAtasCronograma(lista) {
+  const proximas = lista
+    .filter(a => a.diasReais !== null && a.diasReais >= -30 && a.diasReais <= 120)
+    .sort((a, b) => a.diasReais - b.diasReais);
+
+  if (proximas.length === 0) {
+    document.getElementById("atasCronograma").innerHTML = `<p style="color:var(--text-muted);font-size:13px;">Nenhuma Ata no intervalo de -30 a +120 dias pra mostrar no cronograma.</p>`;
+    return;
+  }
+
+  const grupos = {};
+  proximas.forEach(a => {
+    const data = parseDataBR(a.vigenciaEfetiva);
+    const chave = data ? `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, "0")}` : "?";
+    (grupos[chave] = grupos[chave] || []).push(a);
+  });
+
+  document.getElementById("atasCronograma").innerHTML = Object.keys(grupos).sort().map(chave => {
+    const [ano, mes] = chave.split("-");
+    const label = `${MESES_ABREV[parseInt(mes, 10) - 1]}/${ano}`;
+    const itens = grupos[chave];
+    return `
+      <div class="atas-cronograma-mes">
+        <div class="atas-cronograma-mes-titulo">${label} (${itens.length})</div>
+        ${itens.map(a => {
+          const cor = { normal: "#94a3b8", moderada: "#3b82f6", atencao: "#f5a623", alerta: "#f5a623", critico: "#e34848", vencida: "#9f1d1d" }[a.severidade];
+          return `
+            <div class="atas-cronograma-item">
+              <span class="bolinha" style="background:${cor}"></span>
+              <span class="objeto">${a.pregao} — ${a.objeto}</span>
+              <span class="dias" style="color:${cor}">${textoDias(a.diasReais)}</span>
+            </div>
+          `;
+        }).join("")}
+      </div>
+    `;
+  }).join("");
+}
+
+/* ---------- Modal de detalhes ---------- */
+function abrirModalAta(pregao) {
+  const a = getAtasEnriquecidas().find(x => x.pregao === pregao);
+  if (!a) return;
+
+  document.getElementById("atasModalTitulo").textContent = `Ata ${a.pregao}`;
+  const badgeClasse = STATUS_BADGE_CLASSE[a.statusPrincipal] || "st-vigente";
+
+  const timeline = `
+    <div class="atas-timeline">
+      <div class="ponto"><div class="bola"></div><div class="data">${a.inicioVigencia || "-"}</div><div class="rotulo">Início</div></div>
+      <div class="linha-conexao"></div>
+      <div class="ponto"><div class="bola"></div><div class="data">${a.fimVigencia || "-"}</div><div class="rotulo">Fim original</div></div>
+      ${a.renovada && a.novaVigencia ? `
+        <div class="linha-conexao"></div>
+        <div class="ponto futuro"><div class="bola"></div><div class="data">${a.novaVigencia}</div><div class="rotulo">Nova vigência</div></div>
+      ` : ""}
+    </div>
+  `;
+
+  document.getElementById("atasModalCorpo").innerHTML = `
+    <div class="linha"><span>Objeto</span><span>${a.objeto || "-"}</span></div>
+    <div class="linha"><span>Status</span><span><span class="badge-status ${badgeClasse}">${a.statusPrincipal}</span></span></div>
+    <div class="linha"><span>Dias restantes</span><span>${textoDias(a.diasReais)}</span></div>
+    <div class="linha"><span>Início da vigência</span><span>${a.inicioVigencia || "-"}</span></div>
+    <div class="linha"><span>Fim da vigência</span><span>${a.fimVigencia || "-"}</span></div>
+    <div class="linha"><span>Renovada</span><span>${a.renovada ? "Sim" : "Não"}</span></div>
+    ${timeline}
+    <div class="obs-completa"><strong>Observações:</strong><br>${a.obs || "Nenhuma observação registrada."}</div>
+  `;
+
+  document.getElementById("atasModalBackdrop").classList.remove("hidden");
+  document.getElementById("atasModal").classList.remove("hidden");
+}
+
+function fecharModalAta() {
+  document.getElementById("atasModalBackdrop").classList.add("hidden");
+  document.getElementById("atasModal").classList.add("hidden");
+}
+
+/* ---------- Exportação ---------- */
+function getLinhasParaExportar() {
+  const lista = getAtasOrdenadas(getAtasFiltradas());
+  return lista.map(a => ({
+    "Pregão/Ano": a.pregao,
+    "Objeto": a.objeto,
+    "Início Vigência": a.inicioVigencia,
+    "Fim Vigência": a.fimVigencia,
+    "Dias Restantes": a.diasReais === null ? "" : a.diasReais,
+    "Status": a.statusPrincipal,
+    "Nova Vigência": a.novaVigencia || "",
+    "OBS": a.obs || ""
+  }));
+}
+
+function exportarAtasCSV() {
+  const linhas = getLinhasParaExportar();
+  if (linhas.length === 0) return;
+  const cabecalho = Object.keys(linhas[0]);
+  const csv = [
+    cabecalho.join(";"),
+    ...linhas.map(l => cabecalho.map(c => `"${String(l[c]).replace(/"/g, '""')}"`).join(";"))
+  ].join("\n");
+
+  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "atas_gap-gl.csv";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportarAtasExcel() {
+  if (typeof XLSX === "undefined") { alert("Biblioteca de exportação Excel não carregou. Verifique sua conexão."); return; }
+  const linhas = getLinhasParaExportar();
+  const ws = XLSX.utils.json_to_sheet(linhas);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Atas");
+  XLSX.writeFile(wb, "atas_gap-gl.xlsx");
+}
+
+function exportarAtasPDF() {
+  window.print();
+}
+
+/* ---------- Orquestração ---------- */
+function renderAtasCompleto() {
+  const filtradas = getAtasFiltradas();
+  const ordenadas = getAtasOrdenadas(filtradas);
+
+  renderAtasAlerta();
+  renderAtasKPIs(filtradas);
+  renderAtasTabela(ordenadas);
+  if (atasEstado.view === "cronograma") renderAtasCronograma(filtradas);
+
+  // Indicadores de ordenação nos cabeçalhos
+  document.querySelectorAll(".atas-tabela th.ordenavel").forEach(th => {
+    th.classList.remove("ordenado-asc", "ordenado-desc");
+    if (th.dataset.campo === atasEstado.ordenacao.campo) {
+      th.classList.add(atasEstado.ordenacao.direcao === "asc" ? "ordenado-asc" : "ordenado-desc");
+    }
+  });
+}
+
+function renderAtas() {
+  popularFiltroAnoAtas();
+  renderAtasCompleto();
+}
+
+function setupAtasEventos() {
+  document.getElementById("atasBusca").addEventListener("input", e => {
+    atasEstado.busca = e.target.value; atasEstado.pagina = 1; renderAtasCompleto();
+  });
+  document.getElementById("atasFiltroStatus").addEventListener("change", e => {
+    atasEstado.status = e.target.value; atasEstado.kpiAtivo = null; atasEstado.pagina = 1; renderAtasCompleto();
+  });
+  document.getElementById("atasFiltroAno").addEventListener("change", e => {
+    atasEstado.ano = e.target.value; atasEstado.pagina = 1; renderAtasCompleto();
+  });
+  document.getElementById("atasFiltroPrazo").addEventListener("change", e => {
+    atasEstado.prazo = e.target.value; atasEstado.kpiAtivo = null; atasEstado.pagina = 1; renderAtasCompleto();
+  });
+  document.getElementById("atasPorPagina").addEventListener("change", e => {
+    atasEstado.porPagina = Number(e.target.value); atasEstado.pagina = 1; renderAtasCompleto();
+  });
+
+  document.getElementById("atasToggleAvancado").addEventListener("click", () => {
+    document.getElementById("atasFiltrosAvancados").classList.toggle("hidden");
+  });
+
+  document.getElementById("atasOrdenarUrgencia").addEventListener("click", () => {
+    atasEstado.ordenacao = { campo: "diasReais", direcao: "asc" };
+    renderAtasCompleto();
+  });
+
+  const limpar = () => {
+    atasEstado = { ...atasEstado, busca: "", status: "todos", ano: "todos", prazo: "todos", pagina: 1, kpiAtivo: null };
+    sincronizarControlesAtas();
+    renderAtasCompleto();
+  };
+  document.getElementById("atasLimparFiltros").addEventListener("click", limpar);
+  document.getElementById("atasLimparFiltros2").addEventListener("click", limpar);
+
+  document.getElementById("atasViewTabela").addEventListener("click", () => {
+    atasEstado.view = "tabela";
+    document.getElementById("atasViewTabela").classList.add("active");
+    document.getElementById("atasViewCronograma").classList.remove("active");
+    document.getElementById("atasPainelTabela").classList.remove("hidden");
+    document.getElementById("atasPainelCronograma").classList.add("hidden");
+  });
+  document.getElementById("atasViewCronograma").addEventListener("click", () => {
+    atasEstado.view = "cronograma";
+    document.getElementById("atasViewCronograma").classList.add("active");
+    document.getElementById("atasViewTabela").classList.remove("active");
+    document.getElementById("atasPainelCronograma").classList.remove("hidden");
+    document.getElementById("atasPainelTabela").classList.add("hidden");
+    renderAtasCronograma(getAtasFiltradas());
+  });
+
+  document.getElementById("atasExportCsv").addEventListener("click", exportarAtasCSV);
+  document.getElementById("atasExportExcel").addEventListener("click", exportarAtasExcel);
+  document.getElementById("atasExportPdf").addEventListener("click", exportarAtasPDF);
+
+  // Ordenação por clique no cabeçalho
+  document.querySelectorAll(".atas-tabela th.ordenavel").forEach(th => {
+    th.innerHTML += ` <span class="seta">▲▼</span>`;
+    th.addEventListener("click", () => {
+      const campo = th.dataset.campo;
+      if (atasEstado.ordenacao.campo === campo) {
+        atasEstado.ordenacao.direcao = atasEstado.ordenacao.direcao === "asc" ? "desc" : "asc";
+      } else {
+        atasEstado.ordenacao = { campo, direcao: "asc" };
+      }
+      renderAtasCompleto();
+    });
+  });
+
+  // KPIs clicáveis (delegação, já que o conteúdo é recriado a cada render)
+  document.getElementById("atasKpiGrid").addEventListener("click", e => {
+    const card = e.target.closest("[data-kpi]");
+    if (card) aplicarFiltroKpiAtas(card.dataset.kpi);
+  });
+
+  // Botão "Ver Atas" do alerta inteligente
+  document.getElementById("atasAlerta").addEventListener("click", e => {
+    const btn = e.target.closest("[data-ver]");
+    if (!btn) return;
+    const alvo = btn.dataset.ver;
+    if (alvo === "vencidas") aplicarFiltroKpiAtas("vencidas");
+    else if (alvo === "urgentes") aplicarFiltroKpiAtas("urgentes");
+    else if (alvo === "atencao") aplicarFiltroKpiAtas("atencao");
+  });
+
+  // Abrir modal (pregão, objeto, OBS ou botão de ações — delegação num único listener)
+  document.getElementById("atasBody").addEventListener("click", e => {
+    const gatilho = e.target.closest("[data-abrir-modal]");
+    if (gatilho) abrirModalAta(gatilho.dataset.abrirModal);
+  });
+
+  // Paginação (delegação, botões recriados a cada render)
+  document.getElementById("atasPaginacao").addEventListener("click", e => {
+    const btn = e.target.closest("[data-pagina]");
+    if (!btn || btn.disabled) return;
+    atasEstado.pagina = Number(btn.dataset.pagina);
+    renderAtasCompleto();
+  });
+
+  // Modal: fechar
+  document.getElementById("atasModalFechar").addEventListener("click", fecharModalAta);
+  document.getElementById("atasModalBackdrop").addEventListener("click", fecharModalAta);
 }
 
 function renderPipeline() {
@@ -900,6 +1409,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupNavegacao();
   setupFiltrosTabelaPca();
   setupCliquesFiltroPca();
+  setupAtasEventos();
   renderAll();
 
   // 2) Tenta atualizar com os dados do Google Sheets, se configurado.
