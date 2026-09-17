@@ -117,17 +117,28 @@ function parseContratos(rows) {
 function parseProcessos(rows) {
   // Lê as colunas EXATAMENTE como aparecem na planilha original do Cap Saulo
   // (aba "PROCESSOS"): PAG, LICITAÇÃO, MODALIDADE, STATUS, OBJETO RESUMIDO,
-  // OM, RESPONSÁVEL, OBSERVAÇÕES. Não é preciso renomear nada na planilha.
+  // Nº SUBPROCESSO, OM, RESPONSÁVEL, OBSERVAÇÕES, ABERTURA, CONTATO,
+  // DATA INÍCIO PLANEJAMENTO, RESPONSÁVEL PLANEJAMENTO, DATA INÍCIO
+  // PUBLICAÇÃO, RESPONSÁVEL PUBLICAÇÃO.
+  // Não é preciso renomear nada na planilha.
   return rows
     .filter(r => r["OBJETO RESUMIDO"] && r["OBJETO RESUMIDO"].trim() !== "")
     .map(r => ({
+      pag: (r["PAG"] || "").trim(),
       licitacao: r["LICITAÇÃO"] || "",
       modalidade: (r["MODALIDADE"] || "").trim().toUpperCase(),
       status: (r["STATUS"] || "").trim().toUpperCase(),
       objeto: r["OBJETO RESUMIDO"],
+      subprocesso: (r["Nº SUBPROCESSO"] || "").trim(),
       om: (r["OM"] || "").trim(),
       responsavel: (r["RESPONSÁVEL"] || "").trim(),
-      observacoes: r["OBSERVAÇÕES"] || ""
+      observacoes: r["OBSERVAÇÕES"] || "",
+      abertura: (r["ABERTURA"] || "").trim(),
+      contato: (r["CONTATO"] || "").trim(),
+      dataInicioPlanejamento: (r["DATA INÍCIO PLANEJAMENTO"] || "").trim(),
+      responsavelPlanejamento: (r["RESPONSÁVEL PLANEJAMENTO"] || "").trim(),
+      dataInicioPublicacao: (r["DATA INÍCIO PUBLICAÇÃO"] || "").trim(),
+      responsavelPublicacao: (r["RESPONSÁVEL PUBLICAÇÃO"] || "").trim()
     }));
 }
 

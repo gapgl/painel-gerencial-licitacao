@@ -329,7 +329,7 @@ function setupPipelineTabs() {
 /* ---------- Histórico de Processos (filtros) ---------- */
 
 /** Extrai o ano de um código de licitação, aceitando "9005/2026" ou "9005/26". */
-function extrairAno(licitacao) {
+function extrairAnoDaLicitacao(licitacao) {
   const lic = (licitacao || "").trim();
   if (!lic || lic === "-") return null;
   const m4 = lic.match(/(20\d{2})/);
@@ -337,6 +337,29 @@ function extrairAno(licitacao) {
   const m2 = lic.match(/\/(\d{2})$/);
   if (m2) return "20" + m2[1];
   return null;
+}
+
+/** Extrai o ano de uma data "dd/mm/aaaa" (usada na coluna ABERTURA). */
+function extrairAnoDaData(data) {
+  const d = (data || "").trim();
+  const m = d.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+  return m ? m[3] : null;
+}
+
+/**
+ * Ano de um processo: prioriza o número da licitação (mais confiável quando
+ * existe); se o processo ainda não tem número (comum em Fase Interna), usa
+ * a data de Abertura como alternativa — assim processos recentes sem número
+ * ainda não caem todos em "Sem número".
+ */
+function extrairAno(processoOuLicitacao) {
+  // Aceita tanto o objeto do processo inteiro quanto só a string da licitação,
+  // pra não quebrar nenhum lugar do código que já chamava extrairAno(string).
+  if (typeof processoOuLicitacao === "string") {
+    return extrairAnoDaLicitacao(processoOuLicitacao);
+  }
+  const p = processoOuLicitacao || {};
+  return extrairAnoDaLicitacao(p.licitacao) || extrairAnoDaData(p.abertura);
 }
 
 let filtroEstado = { ano: "2026", status: "todos", busca: "" };
@@ -347,7 +370,7 @@ function popularFiltrosProcessos() {
   const anos = new Set();
   let temSemNumero = false;
   processos.forEach(p => {
-    const a = extrairAno(p.licitacao);
+    const a = extrairAno(p);
     if (a) anos.add(a); else temSemNumero = true;
   });
   const anosOrdenados = [...anos].sort((a, b) => b - a);
@@ -370,14 +393,22 @@ function getProcessosFiltrados() {
   const busca = filtroEstado.busca.trim().toLowerCase();
 
   return processos.filter(p => {
-    const ano = extrairAno(p.licitacao);
+    const ano = extrairAno(p);
     const anoOk = filtroEstado.ano === "todos" ? true :
       filtroEstado.ano === "sem_numero" ? ano === null : ano === filtroEstado.ano;
 
     const statusOk = filtroEstado.status === "todos" ? true :
       classificarStatus(p.status).chave === filtroEstado.status;
 
-    const buscaOk = !busca || `${p.objeto} ${p.responsavel} ${p.om}`.toLowerCase().includes(busca);
+    // Campos visíveis (objeto, responsável, OM) + campos ocultos na tabela mas
+    // pesquisáveis (PAG, subprocesso, contato, responsáveis e datas de
+    // planejamento/publicação).
+    const camposBusca = [
+      p.objeto, p.responsavel, p.om, p.subprocesso, p.pag, p.contato,
+      p.responsavelPlanejamento, p.responsavelPublicacao,
+      p.dataInicioPlanejamento, p.dataInicioPublicacao
+    ].filter(Boolean).join(" ");
+    const buscaOk = !busca || camposBusca.toLowerCase().includes(busca);
 
     return anoOk && statusOk && buscaOk;
   });
@@ -394,6 +425,7 @@ function renderTabelaProcessos(lista) {
         <td>${p.objeto}</td>
         <td>${p.om}</td>
         <td>${p.responsavel || "-"}</td>
+        <td class="venc">${p.abertura || "-"}</td>
       </tr>
     `;
   }).join("");
