@@ -339,27 +339,47 @@ function extrairAnoDaLicitacao(licitacao) {
   return null;
 }
 
-/** Extrai o ano de uma data "dd/mm/aaaa" (usada na coluna ABERTURA). */
+/** Extrai o ano de uma data "dd/mm/aaaa" (usada nas datas de planejamento/publicação). */
 function extrairAnoDaData(data) {
   const d = (data || "").trim();
   const m = d.match(/(\d{2})\/(\d{2})\/(\d{4})/);
   return m ? m[3] : null;
 }
 
+/** Extrai o ano do PAG, formato "67107.005813/2026-16" (ano logo antes do "-NN" final). */
+function extrairAnoDoPAG(pag) {
+  const p = (pag || "").trim();
+  const m = p.match(/\/(\d{4})-\d+$/);
+  return m ? m[1] : null;
+}
+
+/** Ano-calendário atual, usado como último recurso quando nada mais indica o ano. */
+function anoVigente() {
+  return String(new Date().getFullYear());
+}
+
 /**
- * Ano de um processo: prioriza o número da licitação (mais confiável quando
- * existe); se o processo ainda não tem número (comum em Fase Interna), usa
- * a data de Abertura como alternativa — assim processos recentes sem número
- * ainda não caem todos em "Sem número".
+ * Ano de um processo, em ordem de prioridade (a primeira que existir vence):
+ *   1. Número da Licitação (coluna B)
+ *   2. Data Início Planejamento (coluna L)
+ *   3. Data Início Publicação (coluna N)
+ *   4. Número do PAG (coluna A)
+ *   5. Ano-calendário vigente (nunca fica sem classificação)
  */
 function extrairAno(processoOuLicitacao) {
   // Aceita tanto o objeto do processo inteiro quanto só a string da licitação,
   // pra não quebrar nenhum lugar do código que já chamava extrairAno(string).
   if (typeof processoOuLicitacao === "string") {
-    return extrairAnoDaLicitacao(processoOuLicitacao);
+    return extrairAnoDaLicitacao(processoOuLicitacao) || anoVigente();
   }
   const p = processoOuLicitacao || {};
-  return extrairAnoDaLicitacao(p.licitacao) || extrairAnoDaData(p.abertura);
+  return (
+    extrairAnoDaLicitacao(p.licitacao) ||
+    extrairAnoDaData(p.dataInicioPlanejamento) ||
+    extrairAnoDaData(p.dataInicioPublicacao) ||
+    extrairAnoDoPAG(p.pag) ||
+    anoVigente()
+  );
 }
 
 let filtroEstado = { ano: "2026", status: "todos", busca: "" };
@@ -367,19 +387,15 @@ let filtroEstado = { ano: "2026", status: "todos", busca: "" };
 function popularFiltrosProcessos() {
   const processos = DASHBOARD_DATA.controleProcessos.processos;
 
-  const anos = new Set();
-  let temSemNumero = false;
-  processos.forEach(p => {
-    const a = extrairAno(p);
-    if (a) anos.add(a); else temSemNumero = true;
-  });
+  // Com as 5 prioridades, todo processo SEMPRE cai em algum ano — não existe
+  // mais "Sem número" no filtro.
+  const anos = new Set(processos.map(p => extrairAno(p)));
   const anosOrdenados = [...anos].sort((a, b) => b - a);
 
   const selAno = document.getElementById("filtroAno");
   selAno.innerHTML =
     `<option value="todos">Todos os anos</option>` +
-    anosOrdenados.map(a => `<option value="${a}">${a}</option>`).join("") +
-    (temSemNumero ? `<option value="sem_numero">Sem número</option>` : "");
+    anosOrdenados.map(a => `<option value="${a}">${a}</option>`).join("");
   selAno.value = anosOrdenados.includes("2026") ? "2026" : "todos";
   filtroEstado.ano = selAno.value;
 
@@ -394,8 +410,7 @@ function getProcessosFiltrados() {
 
   return processos.filter(p => {
     const ano = extrairAno(p);
-    const anoOk = filtroEstado.ano === "todos" ? true :
-      filtroEstado.ano === "sem_numero" ? ano === null : ano === filtroEstado.ano;
+    const anoOk = filtroEstado.ano === "todos" ? true : ano === filtroEstado.ano;
 
     const statusOk = filtroEstado.status === "todos" ? true :
       classificarStatus(p.status).chave === filtroEstado.status;
