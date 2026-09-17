@@ -191,7 +191,7 @@ function renderSecaoKPIs(processosFiltrados) {
   const emTramitacao = contagemStatus.andamento + contagemStatus.adequacao + contagemStatus.envio_cju + contagemStatus.fase_interna + contagemStatus.publicado;
   const pctHomologado = total ? Math.round((contagemStatus.homologado / total) * 100) : 0;
 
-  const atasVencendoLogo = atas.filter(a => classificarRiscoData(a.vigencia) === "critico").length;
+  const atasVencendoLogo = atas.filter(a => a.status === "A VENCER").length;
 
   const el = document.getElementById("kpiGridSecao");
   el.innerHTML = `
@@ -263,40 +263,42 @@ function renderRankings(processosFiltrados) {
   renderRankingLista("rankingOM", contarPor(processos, "om", 8));
 }
 
-/** Classifica o risco de vencimento a partir de uma data "dd/mm/aaaa". */
-function classificarRiscoData(dataBr) {
-  if (!dataBr) return "planejamento";
-  const [d, m, a] = dataBr.split("/").map(Number);
-  if (!d || !m || !a) return "planejamento";
-  const alvo = new Date(a, m - 1, d);
-  const hoje = new Date();
-  const diffDias = Math.round((alvo - hoje) / 86400000);
-  if (diffDias <= 90) return "critico";
-  if (diffDias <= 180) return "atencao";
-  return "planejamento";
-}
+/** Classe visual (borda + cor da pílula) para cada status que a própria planilha calcula. */
+const STATUS_ATA = {
+  "VIGENTE":    { pill: "adequado", linha: "planejamento" },
+  "A VENCER":   { pill: "atencao",  linha: "atencao" },
+  "FINALIZADO": { pill: "critico",  linha: "critico" }
+};
 
 function renderAtas() {
   const atas = DASHBOARD_DATA.controleProcessos.atas;
-  const riscoLabel = { critico: "Vence em breve", atencao: "Atenção", planejamento: "Regular" };
-  const riscoPill = { critico: "critico", atencao: "atencao", planejamento: "adequado" };
 
-  const comRisco = atas.map(a => ({ ...a, risco: classificarRiscoData(a.vigencia) }));
-  comRisco.sort((a, b) => {
-    const [da, ma, aa] = (a.vigencia || "31/12/2099").split("/").map(Number);
-    const [db, mb, ab] = (b.vigencia || "31/12/2099").split("/").map(Number);
-    return new Date(aa, ma - 1, da) - new Date(ab, mb - 1, db);
+  // Ordena pelas que vencem mais cedo primeiro (Dias Restantes menor primeiro;
+  // sem número reconhecível vai pro final da lista).
+  const ordenadas = [...atas].sort((a, b) => {
+    const da = parseInt(a.diasRestantes, 10);
+    const db = parseInt(b.diasRestantes, 10);
+    return (isNaN(da) ? Infinity : da) - (isNaN(db) ? Infinity : db);
   });
 
-  document.getElementById("atasCount").textContent = `${atas.length} atas vigentes`;
-  document.getElementById("atasBody").innerHTML = comRisco.map(a => `
-    <tr class="risk-row-${a.risco}">
-      <td class="nup">${a.pregao}</td>
-      <td>${a.objeto}</td>
-      <td class="venc">${a.vigencia || "-"}</td>
-      <td><span class="pill ${riscoPill[a.risco]}">${riscoLabel[a.risco]}</span></td>
-    </tr>
-  `).join("");
+  document.getElementById("atasCount").textContent = `${atas.length} atas cadastradas`;
+  document.getElementById("atasBody").innerHTML = ordenadas.map(a => {
+    const cfg = STATUS_ATA[a.status] || { pill: "adequado", linha: "planejamento" };
+    // Se já foi renovada (coluna "-"=SIM) e existe Nova Vigência, essa é a
+    // data que importa mostrar; senão, mostra a Fim Vigência original.
+    const vigenciaEfetiva = (a.renovado === "SIM" && a.novaVigencia) ? a.novaVigencia : a.fimVigencia;
+
+    return `
+      <tr class="risk-row-${cfg.linha}">
+        <td class="nup">${a.pregao}</td>
+        <td>${a.objeto}</td>
+        <td class="venc">${vigenciaEfetiva || "-"}</td>
+        <td style="text-align:right;">${a.diasRestantes !== "" ? a.diasRestantes : "-"}</td>
+        <td><span class="pill ${cfg.pill}">${a.status || "-"}</span></td>
+        <td class="prov">${a.obs || ""}</td>
+      </tr>
+    `;
+  }).join("");
 }
 
 function renderPipeline() {

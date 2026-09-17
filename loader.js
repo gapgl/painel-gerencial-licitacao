@@ -41,7 +41,9 @@ function parseCSV(text) {
   if (field.length || row.length) { pushField(); pushRow(); }
 
   const cleanRows = rows.filter(r => r.some(cell => cell.trim() !== ""));
-  const headers = cleanRows.shift().map(h => h.trim());
+  // Normaliza espaços (inclusive duplos, como em "Fim  Vigência") para
+  // o cabeçalho ficar previsível mesmo se a planilha tiver espaços extras.
+  const headers = cleanRows.shift().map(h => h.replace(/\s+/g, " ").trim());
 
   return cleanRows.map(r => {
     const obj = {};
@@ -143,13 +145,22 @@ function parseProcessos(rows) {
 }
 
 function parseAtas(rows) {
-  // Lê a aba "ATAS VIGENTES" original: PREGÃO, OBJETO, VIGÊNCIA.
+  // Lê a aba "atas" (planilha corrigida): Pregão/ANO, Objeto, Início Vigência,
+  // Fim Vigência, Dias Restantes, Status, "-" (renovado SIM/NÃO/VERIFICAR),
+  // Nova Vigência, OBS. Status já vem calculado pela própria planilha
+  // (VIGENTE / A VENCER / FINALIZADO) — o painel só exibe, não recalcula.
   return rows
-    .filter(r => r["PREGÃO"] && r["PREGÃO"].trim() !== "")
+    .filter(r => r["Pregão/ANO"] && r["Pregão/ANO"].trim() !== "")
     .map(r => ({
-      pregao: r["PREGÃO"].trim(),
-      objeto: r["OBJETO"],
-      vigencia: r["VIGÊNCIA"] // string "dd/mm/aaaa"
+      pregao: r["Pregão/ANO"].trim(),
+      objeto: r["Objeto"] || "",
+      inicioVigencia: r["Início Vigência"] || "",
+      fimVigencia: r["Fim Vigência"] || "",
+      diasRestantes: r["Dias Restantes"] || "",
+      status: (r["Status"] || "").trim().toUpperCase(),
+      renovado: (r["-"] || "").trim().toUpperCase(),
+      novaVigencia: r["Nova Vigência"] || "",
+      obs: r["OBS"] || ""
     }));
 }
 

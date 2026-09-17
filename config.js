@@ -26,7 +26,7 @@ const SHEET_URLS = {
   // (mesmas colunas, mesmos nomes). Publique as abas: PROCESSOS, ATAS VIGENTES,
   // 30 (Materiais de Consumo), 39 (Serviços) e 52 (Materiais Permanentes).
   processos: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ21GEEIEkCMGcqzO5UXHKmibyCAi058HICUfo71cYgaVNKkYxts8_jUlZ7d9V0tud3_Y8fv-SCSZpQ/pub?gid=1792534194&single=true&output=csv",
-  atas: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ21GEEIEkCMGcqzO5UXHKmibyCAi058HICUfo71cYgaVNKkYxts8_jUlZ7d9V0tud3_Y8fv-SCSZpQ/pub?gid=230824727&single=true&output=csv",
+  atas: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ21GEEIEkCMGcqzO5UXHKmibyCAi058HICUfo71cYgaVNKkYxts8_jUlZ7d9V0tud3_Y8fv-SCSZpQ/pub?gid=343921364&single=true&output=csv",
   pipelineConsumo: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ21GEEIEkCMGcqzO5UXHKmibyCAi058HICUfo71cYgaVNKkYxts8_jUlZ7d9V0tud3_Y8fv-SCSZpQ/pub?gid=1938823239&single=true&output=csv",
   pipelineServicos: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ21GEEIEkCMGcqzO5UXHKmibyCAi058HICUfo71cYgaVNKkYxts8_jUlZ7d9V0tud3_Y8fv-SCSZpQ/pub?gid=598227188&single=true&output=csv",
   pipelinePermanentes: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ21GEEIEkCMGcqzO5UXHKmibyCAi058HICUfo71cYgaVNKkYxts8_jUlZ7d9V0tud3_Y8fv-SCSZpQ/pub?gid=1922832749&single=true&output=csv",
@@ -37,7 +37,7 @@ const SHEET_URLS = {
   // em vez de sobrescrever o ano anterior. Para adicionar um novo ano no
   // futuro, é só acrescentar mais uma linha aqui — nenhum código muda.
   pcaAnos: {
-    "2026": "https://docs.google.com/spreadsheets/d/e/2PACX-1vRzFqJ721YD8hG32ZlyES8A4Na5bZ3YLmYmMRr5PiCXeMTc5VCKykJh9tCYuMbQ-bwlFkdSlVemaHKy/pub?gid=1328699524&single=true&output=csv",
-    "2027": "https://docs.google.com/spreadsheets/d/e/2PACX-1vRzFqJ721YD8hG32ZlyES8A4Na5bZ3YLmYmMRr5PiCXeMTc5VCKykJh9tCYuMbQ-bwlFkdSlVemaHKy/pub?gid=1575051613&single=true&output=csv"
+    "2026": "",
+    "2027": ""
   }
 };

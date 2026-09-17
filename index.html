@@ -61,9 +61,9 @@
     <div class="sidebar-group" data-grupo="secao">
       <div class="sidebar-group-title">Acompanhamento da Seção</div>
       <a href="#secao-processos" class="sidebar-link" data-page="secao"><span class="idx">1</span> Acompanhamento de Processos</a>
-      <!-- Temporariamente ocultos a pedido (não apagados — só remova "hidden" das seções e descomente os links abaixo pra reativar) -->
-      <!--
       <a href="#secao-atas" class="sidebar-link" data-page="secao"><span class="idx">2</span> Atas Vigentes</a>
+      <!-- "Planejamento de Processos" continua oculto a pedido — remova "hidden" da seção e descomente o link abaixo pra reativar -->
+      <!--
       <a href="#secao-planejamento" class="sidebar-link" data-page="secao"><span class="idx">3</span> Planejamento de Processos</a>
       -->
     </div>
@@ -365,9 +365,7 @@
       </div>
     </section>
 
-    <section id="secao-atas" class="hidden">
-      <!-- Oculto temporariamente. Para reativar: apague class="hidden" aqui
-           e descomente os links correspondentes no menu lateral (acima). -->
+    <section id="secao-atas">
       <div class="section-head">
         <h2>2. Atas de Registro de Preço Vigentes</h2>
         <span id="atasCount"></span>
@@ -379,7 +377,9 @@
               <th>Pregão</th>
               <th>Objeto</th>
               <th>Vigência</th>
+              <th>Dias Restantes</th>
               <th>Status</th>
+              <th>Observações</th>
             </tr>
           </thead>
           <tbody id="atasBody"></tbody>
